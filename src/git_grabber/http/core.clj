@@ -15,6 +15,10 @@
 ;; 1. test -Dtoken for list
 ;; 2. make lazy cyclic token list
 
+(def sleep-preiod
+  "Sleep time when limit of requests has expired"
+  12000) ;; 2 minutes
+
 (defn get-token []
   "Get token from enivironment variable."
   (or (first (:token env)) (throw (Exception. "specify -Dtoken="))))
@@ -39,7 +43,7 @@
                             :query-params request :as :json})
                :body
                :items)
-        (catch Exception e (handle-error e) nil))))))
+        (catch Exception e (handle-error e) (Thread/sleep sleep-preiod)))))))
 
 (defn lazy-search-repos
   ([params] (lazy-search-repos params 1))

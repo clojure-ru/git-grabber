@@ -7,8 +7,9 @@
 
 (defentity owners)
 
-(defentity )
+(defentity repositories)
 
+;; SQLState: 23505 for duplicates
 (defn put [ent data]
   (try
     (insert ent (values data))

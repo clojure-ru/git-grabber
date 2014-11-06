@@ -11,6 +11,8 @@ SET client_min_messages = warning;
 SET search_path = public, pg_catalog;
 
 ALTER TABLE ONLY public.repositories DROP CONSTRAINT owner;
+DROP INDEX public.fki_owner;
+ALTER TABLE ONLY public.repositories DROP CONSTRAINT repository_path;
 ALTER TABLE ONLY public.repositories DROP CONSTRAINT repos_id;
 ALTER TABLE ONLY public.owners DROP CONSTRAINT owner_name;
 ALTER TABLE ONLY public.owners DROP CONSTRAINT owner_id;
@@ -62,7 +64,7 @@ SET default_with_oids = false;
 
 CREATE TABLE owners (
     id bigint NOT NULL,
-    git_id bigint,
+    github_id bigint,
     name character(256) NOT NULL,
     avatar_url character(256),
     gravatar_id integer,
@@ -96,7 +98,7 @@ ALTER SEQUENCE owners_id_seq OWNED BY owners.id;
 
 CREATE TABLE repositories (
     id bigint NOT NULL,
-    git_id bigint,
+    github_id bigint,
     name character(256),
     full_name character(512),
     owner_id bigint,
@@ -112,7 +114,8 @@ CREATE TABLE repositories (
     forks_count integer,
     forks integer,
     open_issues integer,
-    forks_ids bigint[]
+    forks_ids bigint[],
+    parent_id bigint
 );
 
 
@@ -178,6 +181,21 @@ ALTER TABLE ONLY owners
 
 ALTER TABLE ONLY repositories
     ADD CONSTRAINT repos_id PRIMARY KEY (id);
+
+
+--
+-- Name: repository_path; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY repositories
+    ADD CONSTRAINT repository_path UNIQUE (full_name);
+
+
+--
+-- Name: fki_owner; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX fki_owner ON repositories USING btree (owner_id);
 
 
 --
