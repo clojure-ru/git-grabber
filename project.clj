@@ -5,7 +5,9 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [clj-http "1.0.1"]
                  [environ "1.0.0"]
-                 [cheshire "5.3.1"]]
+                 [cheshire "5.3.1"]
+                 [postgresql "9.3-1102.jdbc41"]
+                 [korma "0.4.0"]]
   :main ^:skip-aot git-grabber.core
   :target-path "target/%s"
   :injections [(require '[git-grabber.core :refer :all]
