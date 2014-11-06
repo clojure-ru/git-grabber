@@ -14,6 +14,7 @@
 
 ;; 1. test -Dtoken for list
 ;; 2. make lazy cyclic token list
+
 (defn get-token []
   "Get token from enivironment variable."
   (or (first (:token env)) (throw (Exception. "specify -Dtoken="))))
@@ -55,6 +56,7 @@
 ;; - 404 on breking connection
 
 ; write formated log for errors: [cur-time][slip-time in msec] message
+; throw error when exceeded limit of results
 
 (defn handle-error [error]
     (prn (-> (.getData error)
