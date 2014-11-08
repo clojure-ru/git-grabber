@@ -13,6 +13,6 @@
   :target-path "target/%s"
   :injections [(require '[git-grabber.core :refer :all]
                         '[git-grabber.http.core :refer :all]
-                        '[git-grabber.storage.core :refer :all])
+                        '[git-grabber.evolution.updating :refer :all])
                (defn repass [] (use :reload 'git-grabber.core))]
   :profiles {:uberjar {:aot :all}})

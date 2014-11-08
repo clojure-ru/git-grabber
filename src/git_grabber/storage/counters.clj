@@ -13,14 +13,9 @@
      reduce))
 
 
-(defn calc-counter [repo-id counter-id current-val]
-  (let [old-val (select counters
-                        (fields :count)
-                        (where {:date (t/minus (t/today) (t/days 1))
-                                :repository_id repo-id
-                                :counter_id counter-id}))]
-    {:counter_id counter-id
-     :increment (if (not-empty old-val)
-                  (- current-val (-> old-val first :count))
-                  current-val)
-     :count current-val}))
+(defn get-counter-repository-for-date [repo-id counter-id date]
+  (select counters
+          (fields :count)
+          (where {:date date
+                  :repository_id repo-id
+                  :counter_id counter-id})))
