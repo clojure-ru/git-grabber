@@ -32,7 +32,9 @@
 ;; GIT SEARCH
 
 (def settings {:search-params {:q "language:clojure" :per_page 100}
-               :search-url "https://api.github.com/search/repositories"})
+               :search-url "https://api.github.com/search/repositories"
+               :repos-url "https://api.github.com/repos/"
+               :users-url "https://api.github.com/users/"})
 
 (defn search-repos
   ([params]
@@ -51,6 +53,7 @@
    (lazy-cat (search-repos (assoc params :page page))
              (lazy-search-repos params (inc page)))))
 
+
 ;;;; VARIANTS
 ;;; with message
 ;; - estimated-limit = 100
@@ -67,6 +70,19 @@
              :object :body
              decode keywordize-keys
              :message)))
+
+
+;; REPOSITORY
+
+
+
+(defn get-repository-info-from-github [repository-path]
+  (with-auth
+    (try (-> (client/get (str (:repos-url settings) repository-path)
+                         {:headers {"Authorization" (str "token " *token*)}
+                          :as :json})
+             :body)
+     (catch Exception e (handle-error e) (Thread/sleep sleep-preiod)))))
 
 ;; REQUEST TO GIT
 
