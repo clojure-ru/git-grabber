@@ -5,4 +5,6 @@
 (defentity owners)
 
 (defn get-owner-id-with-name [owner-name]
-  (select owners (fields :id) (where {:name owner-name}) (limit 1)))
+  (-> (select owners (fields :id) (where {:name owner-name}) (limit 1))
+      first
+      :id))

@@ -4,28 +4,17 @@
             [clojure.walk :refer [keywordize-keys]]
             [cheshire.core :refer [generate-string decode]]))
 
+(declare authorized-request)
 
-(declare request handle-error)
+;;;; HELPERS
 
-;; GIT AUTH
-
-(def ^:dynamic *token*
-  "Auth token for Git API" nil)
-
-;; 1. test -Dtoken for list
-;; 2. make lazy cyclic token list
-
-(def sleep-preiod
-  "Sleep time when limit of requests has expired"
-  12000) ;; 2 minutes
-
-(defn get-token []
-  "Get token from enivironment variable."
-  (or (first (:token env)) (throw (Exception. "specify -Dtoken="))))
-
-(defmacro with-auth [& body]
-  `(binding [*token* ~(get-token)]
-     ~@body))
+(defn lazy-request-with-pagination [params page request-fn]
+  (let [response (request-fn params page)]
+    (if (and response (empty? response))
+      nil
+      (lazy-cat response (lazy-request-with-pagination params
+                                                       (inc page)
+                                                       request-fn)))))
 
 ;;;; API ADAPTER
 
@@ -37,69 +26,84 @@
                :users-url "https://api.github.com/users/"})
 
 (defn search-repos
-  ([params]
-   (with-auth
-    (let [request (merge (:search-params settings) params)]
-      (try (-> (client/get (:search-url settings)
-                           {:headers {"Authorization" (str "token " *token*)}
-                            :query-params request :as :json})
-               :body
-               :items)
-        (catch Exception e (handle-error e) (Thread/sleep sleep-preiod)))))))
+  ([params page]
+   (let [request-params (merge (:search-params settings) params {:page page})]
+     (-> (authorized-request (:search-url settings)
+                             {:query-params request-params
+                              :as :json})
+         :body
+         :items))))
 
 (defn lazy-search-repos
-  ([params] (lazy-search-repos params 1))
-  ([params page]
-   (lazy-cat (search-repos (assoc params :page page))
-             (lazy-search-repos params (inc page)))))
+  ([search-params] (lazy-search-repos search-params 1))
+  ([search-params page]
+   (lazy-request-with-pagination search-params page search-repos)))
 
+;; REPOSITORY
 
-;;;; VARIANTS
+(defn get-repository-info-from-github [repository-path]
+  (-> (authorized-request (str (:repos-url settings) repository-path)
+                          {:as :json})
+      :body))
+
+; COMMITS
+
+(defn get-repository-commits [repository-path page]
+  (-> (authorized-request (str (:repos-url settings) repository-path "/commits")
+                          {:query-params {:page page :per_page 100}
+                           :as :json})
+      :body))
+
+(defn lazy-get-repository-commits
+  ([repo-path] (lazy-get-repository-commits repo-path 1))
+  ([repo-path page]
+   (lazy-request-with-pagination repo-path page get-repository-commits)))
+
+;;;; LOW LEVEL
+
+;; GIT AUTH
+
+(def ^:dynamic *token*
+  "Auth token for Git API" nil)
+
+;; 1. test -Dtoken for list
+;; 2. make lazy cyclic token list
+
+(def sleep-preiod
+  "Sleep time when limit of requests has expired"
+  10000) ;; 10 secs
+
+(defn get-token []
+  "Get token from enivironment variable."
+  (or (first (:token env)) (throw (Exception. "specify -Dtoken="))))
+
+(defmacro with-auth [& body]
+  `(binding [*token* ~(get-token)]
+     ~@body))
+
+;;; EXCEPTION VARIANTS
+
 ;;; with message
 ;; - estimated-limit = 100
 ;; - bad request
 
 ;;; not have message
-;; - 404 on breking connection
+;; - 404 when connection is broken
 
 ; write formated log for errors: [cur-time][slip-time in msec] message
 ; throw error when exceeded limit of results
 
 (defn handle-error [error]
-    (prn (-> (.getData error)
-             :object :body
-             decode keywordize-keys
-             :message)))
+  (prn (-> (.getData error)
+           :object :body
+           decode keywordize-keys
+           :message)))
 
-
-;; REPOSITORY
-
-
-
-(defn get-repository-info-from-github [repository-path]
-  (with-auth
-    (try (-> (client/get (str (:repos-url settings) repository-path)
-                         {:headers {"Authorization" (str "token " *token*)}
-                          :as :json})
-             :body)
-     (catch Exception e (handle-error e) (Thread/sleep sleep-preiod)))))
-
-;; REQUEST TO GIT
-
-; Type of path
-; /action
-; /repos/:owner/:repo/action
-; /repos/:owner/:repo/issues/event
-
-(defn request
+(defn authorized-request
   "Git API adapter"
-  ([path] (request path {}))
+  ([path] (authorized-request path {}))
   ([path params]
-   {:pre [(and (string? path) (map? params))]}
    (with-auth
-     (client/get (str "https://api.github.com/" path)
-                  {:headers {"Authorization" (str "token " *token*)}
-                   :content-type :json
-                   :accept :json
-;;                    :body (generate-string params)
-                   }))))
+     (let [auth-params {"Authorization" (str "token " *token*)}]
+       (try (client/get path (merge params {:headers auth-params}))
+         (catch Exception e (handle-error e) (Thread/sleep sleep-preiod)))))))

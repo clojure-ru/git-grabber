@@ -12,6 +12,7 @@
     (catch Exception e (prn (.getMessage e)))))
 
 (defn put-unique [ent data]
-  (when (= 0 (count (select ent (where data))))
-    (prn data)
-    (insert ent (values data))))
+  (let [old-data (select ent (where data))]
+    (if (= 0 (count old-data))
+      (insert ent (values data))
+      (first old-data))))

@@ -19,17 +19,17 @@ ALTER TABLE ONLY public.repositories DROP CONSTRAINT repos_id;
 ALTER TABLE ONLY public.owners DROP CONSTRAINT owner_name;
 ALTER TABLE ONLY public.owners DROP CONSTRAINT owner_id;
 ALTER TABLE ONLY public.counters DROP CONSTRAINT daily_counters_for_repositories;
-ALTER TABLE ONLY public.counter_type DROP CONSTRAINT counter_type_id;
+ALTER TABLE ONLY public.counter_types DROP CONSTRAINT counter_type_id;
 ALTER TABLE public.repositories ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE public.owners ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE public.counter_type ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.counter_types ALTER COLUMN id DROP DEFAULT;
 DROP SEQUENCE public.repositories_id_seq;
 DROP TABLE public.repositories;
 DROP SEQUENCE public.owners_id_seq;
 DROP TABLE public.owners;
 DROP TABLE public.counters;
 DROP SEQUENCE public.counter_type_id_seq;
-DROP TABLE public.counter_type;
+DROP TABLE public.counter_types;
 DROP EXTENSION plpgsql;
 DROP SCHEMA public;
 --
@@ -67,10 +67,10 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
--- Name: counter_type; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: counter_types; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE TABLE counter_type (
+CREATE TABLE counter_types (
     id integer NOT NULL,
     name character varying(256)
 );
@@ -92,7 +92,7 @@ CREATE SEQUENCE counter_type_id_seq
 -- Name: counter_type_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE counter_type_id_seq OWNED BY counter_type.id;
+ALTER SEQUENCE counter_type_id_seq OWNED BY counter_types.id;
 
 
 --
@@ -193,7 +193,7 @@ ALTER SEQUENCE repositories_id_seq OWNED BY repositories.id;
 -- Name: id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY counter_type ALTER COLUMN id SET DEFAULT nextval('counter_type_id_seq'::regclass);
+ALTER TABLE ONLY counter_types ALTER COLUMN id SET DEFAULT nextval('counter_type_id_seq'::regclass);
 
 
 --
@@ -214,7 +214,7 @@ ALTER TABLE ONLY repositories ALTER COLUMN id SET DEFAULT nextval('repositories_
 -- Name: counter_type_id; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
-ALTER TABLE ONLY counter_type
+ALTER TABLE ONLY counter_types
     ADD CONSTRAINT counter_type_id PRIMARY KEY (id);
 
 
@@ -270,7 +270,7 @@ CREATE INDEX fki_owner ON repositories USING btree (owner_id);
 --
 
 ALTER TABLE ONLY counters
-    ADD CONSTRAINT counter_type FOREIGN KEY (counter_id) REFERENCES counter_type(id);
+    ADD CONSTRAINT counter_type FOREIGN KEY (counter_id) REFERENCES counter_types(id);
 
 
 --
