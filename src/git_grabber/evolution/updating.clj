@@ -14,7 +14,6 @@
 
 (use 'debugger.core)
 
-
 (defn update-repository-info [repository-name]
   (break
    (update-repository (get-repository-info-from-github repository-name))))

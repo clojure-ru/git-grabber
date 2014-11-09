@@ -6,6 +6,7 @@
                  [clj-time "0.8.0"]
                  [clj-http "1.0.1"]
                  [environ "1.0.0"]
+                  [debugger "0.1.2"]
                  [cheshire "5.3.1"]
                  [postgresql "9.3-1102.jdbc41"]
                  [korma "0.4.0"]]
