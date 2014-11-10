@@ -1,8 +1,8 @@
 (ns git-grabber.evolution.collect
 (:require [git-grabber.http.core :refer [lazy-search-repos]]
-          [git-grabber.storage.repository :refer [repositories]]
+          [git-grabber.storage.repositories :refer [repositories]]
           [git-grabber.storage.config :refer [put-unique]]
-          [git-grabber.storage.owner :refer [owners]]))
+          [git-grabber.storage.owners :refer [owners]]))
 
 (defn lazy-seq-of-sorted-repos
   "sort - stars, forks or updated, without sort - best matches"

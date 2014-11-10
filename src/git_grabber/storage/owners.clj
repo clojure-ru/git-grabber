@@ -1,4 +1,4 @@
-(ns git-grabber.storage.owner
+(ns git-grabber.storage.owners
   (:require [korma.core :refer :all]
             [git-grabber.storage.config :refer :all]))
 

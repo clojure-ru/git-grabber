@@ -1,10 +1,10 @@
-(ns git-grabber.storage.repository
+(ns git-grabber.storage.repositories
   (:require [korma.core :refer :all]
             [git-grabber.storage.config :refer :all]
             [clojure.set :refer [rename-keys]]
             [clj-time.coerce :refer [from-string to-sql-date]]
             [clj-time.core :as t]
-            [git-grabber.storage.owner :refer [get-owner-id-with-name]]))
+            [git-grabber.storage.owners :refer [get-owner-id-with-name]]))
 
 (defentity repositories)
 

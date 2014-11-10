@@ -6,7 +6,6 @@
                  [clj-time "0.8.0"]
                  [clj-http "1.0.1"]
                  [environ "1.0.0"]
-                  [debugger "0.1.2"]
                  [cheshire "5.3.1"]
                  [postgresql "9.3-1102.jdbc41"]
                  [korma "0.4.0"]]
@@ -15,6 +14,5 @@
   :injections [(require '[git-grabber.core :refer :all]
                         '[git-grabber.http.core :refer :all]
                         '[git-grabber.storage.config :refer :all]
-                        '[git-grabber.evolution.updating :refer :all])
-               (defn repass [] (use :reload 'git-grabber.core))]
+                        '[git-grabber.evolution.updating :refer :all])]
   :profiles {:uberjar {:aot :all}})
