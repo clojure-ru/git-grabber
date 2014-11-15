@@ -40,7 +40,7 @@
          (convert-date fields :updated_at)
          (convert-date fields :pushed_at)))
 
-(defn update-repository [repository-map]
+(defn update-repository-info [repository-map]
   (let [prepare-fields (-> repository-map
                            prepare-fields-keys
                            prepare-repository-dates)]

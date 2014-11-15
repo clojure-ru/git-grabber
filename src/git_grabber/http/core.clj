@@ -66,10 +66,12 @@
 (def ^:dynamic *token*
   "Auth token for Git API" nil)
 
+
+;; #TODO
 ;; 1. test -Dtoken for list
 ;; 2. make lazy cyclic token list
 
-(def sleep-preiod
+(def sleep-period
   "Sleep time when limit of requests has expired"
   10000) ;; 10 secs
 
@@ -90,20 +92,38 @@
 ;;; not have message
 ;; - 404 when connection is broken
 
+;; #TODO error log
 ; write formated log for errors: [cur-time][slip-time in msec] message
 ; throw error when exceeded limit of results
 
-(defn handle-error [error]
-  (prn (-> (.getData error)
-           :object :body
-           decode keywordize-keys
-           :message)))
+(defn handle-error [error path]
+  (prn (.getMessage error)))
+
+;; #TODO sleep if response status is not 200
+
+(defn make-request-params [params]
+  (merge params {:headers {:Authorization (str "token " *token*)}
+                 :throw-exceptions false}))
+
+
+;; #TODO 304 for If-None-Match and If-Modified-Since request params
+
+(defn handle-status [response]
+  (let [status (:status response)]
+    (cond
+     (= status 200) response
+     (= status 403) (Thread/sleep sleep-period) ;; Limits error
+     (= status 400) (throw (Exception. "Bad request"))
+     (= status 422) (throw (Exception. "Invalid fields"))
+     (or (= status 301)
+         (= status 302)
+         (= status 307)) (Exception. "Redirection"))))
 
 (defn authorized-request
   "Git API adapter"
   ([path] (authorized-request path {}))
   ([path params]
    (with-auth
-     (let [auth-params {"Authorization" (str "token " *token*)}]
-       (try (client/get path (merge params {:headers auth-params}))
-         (catch Exception e (handle-error e) (Thread/sleep sleep-preiod)))))))
+     (try
+       (handle-status (client/get path (make-request-params params)))
+     (catch Exception e (handle-error e path))))))

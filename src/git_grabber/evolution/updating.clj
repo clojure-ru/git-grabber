@@ -5,7 +5,7 @@
             [git-grabber.storage.repositories :refer [repositories
                                                       get-all-repositoies-paths
                                                       get-repository-id-with-path
-                                                      update-repository]]
+                                                      update-repository-info]]
             [git-grabber.storage.config :refer [put-unique]]
             [git-grabber.storage.counters :refer [counters counter_types
                                                   update-counter
@@ -13,14 +13,14 @@
                                                   get-repositories-names-without-counters]]
             [clj-time.core :as t]))
 
-(defn update-repository-info [repository-name]
-   (update-repository (get-repository-info-from-github repository-name)))
-
 (defn update-repositories-info []
-  (pmap #(update-repository-info %) (get-all-repositoies-paths)))
+  "Update general repository information"
+  (pmap #(update-repository-info (get-repository-info-from-github %))
+        (get-all-repositoies-paths)))
 
 (defn count-commits-on-github [repository-path]
   (count (lazy-get-repository-commits repository-path)))
+
 
 (defn update-repository-counters [repository-map]
   (let [repo-id (-> repository-map :full_name get-repository-id-with-path)
@@ -39,7 +39,8 @@
 
     (update-counter repo-id
                     (:commits counter-types-ids)
-                    (count-commits-on-github (:full_name repository-map)))))
+                    (count-commits-on-github (:full_name repository-map)))
+    nil))
 
 (defn update-repositories-counters []
   (pmap #(update-repository-counters (get-repository-info-from-github %))

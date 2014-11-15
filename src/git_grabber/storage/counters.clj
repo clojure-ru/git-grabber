@@ -33,21 +33,23 @@
                   :repository_id repo-id
                   :counter_id counter-id})))
 
+;; #TODO current-val maybe Null-pointer
+;; need log for this
 (defn calc-increment [repo-id counter-id current-val]
   (let [yesterday (t/minus (t/today) (t/days 1))
         old-val (first (get-counter-for-date repo-id counter-id yesterday))]
     (- current-val (or (:count old-val) 0))))
 
+
 (defn update-counter [repo-id counter-id counter-value]
   (let [date (t/today)
         increment (calc-increment repo-id counter-id counter-value)]
-    (put-unique counters {:date date
+    (put counters {:date (to-sql-date date)
                           :repository_id repo-id
                           :counter_id counter-id
-                          :incerement increment
+                          :increment increment
                           :count counter-value})))
 
-;; #TODO репы, у которых нет каунтеров за сегодня" и опрашивай только их
 (defn get-repositories-names-without-counters [rdate]
   (let [repo-ids-for-date (subselect counters
                                      (fields :repository_id)
