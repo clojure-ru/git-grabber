@@ -13,6 +13,7 @@
                                                   get-repositories-names-without-counters]]
             [clj-time.core :as t]))
 
+
 (defn update-repositories-info []
   "Update general repository information"
   (pmap #(update-repository-info (get-repository-info-from-github %))
