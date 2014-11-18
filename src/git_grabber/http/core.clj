@@ -42,9 +42,12 @@
 ;; REPOSITORY
 
 (defn get-repository-info-from-github [repository-path]
-  (-> (authorized-request (str (:repos-url settings) repository-path)
-                          {:as :json})
-      :body))
+  (let [rep (-> (authorized-request (str (:repos-url settings) repository-path)
+                                {:as :json})
+            :body)]
+    (when (not rep)
+      (prn repository-path))
+    rep))
 
 ; COMMITS
 
@@ -77,7 +80,7 @@
 
 (defn get-token []
   "Get token from enivironment variable."
-  (or (first (:token env)) (throw (Exception. "specify -Dtoken="))))
+  (or (:token env) (throw (Exception. "specify -Dtoken="))))
 
 (defmacro with-auth [& body]
   `(binding [*token* ~(get-token)]
@@ -99,25 +102,15 @@
 (defn handle-error [error path]
   (prn (.getMessage error)))
 
-;; #TODO sleep if response status is not 200
-
 (defn make-request-params [params]
   (merge params {:headers {:Authorization (str "token " *token*)}
                  :throw-exceptions false}))
 
-
-;; #TODO 304 for If-None-Match and If-Modified-Since request params
-
+;; #TODO terminate???
 (defn handle-status [response]
-  (let [status (:status response)]
-    (cond
-     (= status 200) response
-     (= status 403) (Thread/sleep sleep-period) ;; Limits error
-     (= status 400) (throw (Exception. "Bad request"))
-     (= status 422) (throw (Exception. "Invalid fields"))
-     (or (= status 301)
-         (= status 302)
-         (= status 307)) (Exception. "Redirection"))))
+  (if (= (:status response) 200)
+    response
+    (Thread/sleep sleep-period)))
 
 (defn authorized-request
   "Git API adapter"

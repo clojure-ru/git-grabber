@@ -19,36 +19,22 @@
   ;;                 (assoc v :date (from-sql-date date)) v)))
   )
 
-(defn get-counter-id [name]
-  (select counter_types (where {:name name})))
+(defn get-counter-type-id [name]
+  (:id (select counter_types (where {:name name}))))
 
-(defn get-counter-types-ids []
+(defn get-counter-type-ids []
+  (map :id (select counter_types)))
+
+(defn get-counter-types-ids-with-names []
   (let [rekey (fn [m] {(keyword (:name m)) (:id m)})]
     (apply merge (map rekey (select counter_types)))))
 
-(defn get-counter-for-date [repo-id counter-id date]
-  (select counters
-          (fields :count)
-          (where {:date (to-sql-date date)
-                  :repository_id repo-id
-                  :counter_id counter-id})))
-
-;; #TODO current-val maybe Null-pointer
-;; need log for this
-(defn calc-increment [repo-id counter-id current-val]
-  (let [yesterday (t/minus (t/today) (t/days 1))
-        old-val (first (get-counter-for-date repo-id counter-id yesterday))]
-    (- current-val (or (:count old-val) 0))))
-
 
 (defn update-counter [repo-id counter-id counter-value]
-  (let [date (t/today)
-        increment (calc-increment repo-id counter-id counter-value)]
-    (put counters {:date (to-sql-date date)
-                          :repository_id repo-id
-                          :counter_id counter-id
-                          :increment increment
-                          :count counter-value})))
+  (put counters {:date (to-sql-date (t/today))
+                 :repository_id repo-id
+                 :counter_id counter-id
+                 :count counter-value}))
 
 (defn get-repositories-names-without-counters [rdate]
   (let [repo-ids-for-date (subselect counters

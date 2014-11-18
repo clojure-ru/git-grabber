@@ -9,7 +9,7 @@
             [git-grabber.storage.config :refer [put-unique]]
             [git-grabber.storage.counters :refer [counters counter_types
                                                   update-counter
-                                                  get-counter-types-ids
+                                                  get-counter-types-ids-with-names
                                                   get-repositories-names-without-counters]]
             [clj-time.core :as t]))
 
@@ -22,10 +22,10 @@
 (defn count-commits-on-github [repository-path]
   (count (lazy-get-repository-commits repository-path)))
 
-
+;;;; FOR ALL COUNTERS
 (defn update-repository-counters [repository-map]
   (let [repo-id (-> repository-map :full_name get-repository-id-with-path)
-        counter-types-ids (get-counter-types-ids)]
+        counter-types-ids (get-counter-types-ids-with-names)]
     (update-counter repo-id
                     (:forks counter-types-ids)
                     (:forks repository-map))
