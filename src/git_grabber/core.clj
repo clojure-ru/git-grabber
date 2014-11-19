@@ -1,10 +1,12 @@
 (ns git-grabber.core
-  (:require [git-grabber.evolution.collect :refer [sleep-collect]]))
+  (:require [git-grabber.evolution.collect :refer [sleep-collect]]
+            [git-grabber.config :refer :all]))
 
-(def short-sleep-period 600000) ;; 10 min
+(def short-sleep-period 1000) ;; 600000) ;; 10 min
 (def long-sleep-period 1800000) ;; 30 min
 
 (defn -main [& args]
+  (configure)
   (future (sleep-collect short-sleep-period "updated"))
 ;;   (future  (sleep-collect short-sleep-period {}) ;; #TODO pagging bug
   (future (sleep-collect long-sleep-period "stars"))

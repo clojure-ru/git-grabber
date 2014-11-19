@@ -10,14 +10,7 @@
 
 ;; #TODO apply to counters (has-one counter_types).
 ;; May this joined counter_types with selects automaticaly
-(defentity counters
-  ;;   (prepare (fn [{date :date :as v}]
-  ;;               (if date
-  ;;                 (assoc v :date (to-sql-date date)) v)))
-  ;;   (transform (fn [{date :date :as v}]
-  ;;                (if date
-  ;;                 (assoc v :date (from-sql-date date)) v)))
-  )
+(defentity counters)
 
 (defn get-counter-type-id [name]
   (:id (select counter_types (where {:name name}))))

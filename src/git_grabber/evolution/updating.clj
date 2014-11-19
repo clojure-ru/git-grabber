@@ -26,22 +26,23 @@
 (defn update-repository-counters [repository-map]
   (let [repo-id (-> repository-map :full_name get-repository-id-with-path)
         counter-types-ids (get-counter-types-ids-with-names)]
-    (update-counter repo-id
-                    (:forks counter-types-ids)
-                    (:forks repository-map))
+    (when repo-id
+     (update-counter repo-id
+                     (:forks counter-types-ids)
+                     (:forks repository-map))
 
-    (update-counter repo-id
-                    (:watchers counter-types-ids)
-                    (:watchers repository-map))
+     (update-counter repo-id
+                     (:watchers counter-types-ids)
+                     (:watchers repository-map))
 
-    (update-counter repo-id
-                    (:stars counter-types-ids)
-                    (:stargazers_count repository-map))
+     (update-counter repo-id
+                     (:stars counter-types-ids)
+                     (:stargazers_count repository-map))
 
-    (update-counter repo-id
-                    (:commits counter-types-ids)
-                    (count-commits-on-github (:full_name repository-map)))
-    nil))
+     (update-counter repo-id
+                     (:commits counter-types-ids)
+                     (count-commits-on-github (:full_name repository-map)))
+     nil)))
 
 (defn update-repositories-counters []
   (pmap #(update-repository-counters (get-repository-info-from-github %))

@@ -9,11 +9,14 @@
 ;;                  [debugger "0.1.3"]
                  [cheshire "5.3.1"]
                  [postgresql "9.3-1102.jdbc41"]
-                 [korma "0.4.0"]]
+                 [korma "0.4.0"]
+                 [com.taoensso/timbre "3.3.1"]]
   :main ^:skip-aot git-grabber.core
   :target-path "target/%s"
   :injections [(require '[git-grabber.core :refer :all]
+;;                         '[git-grabber.config :refer :all]
                         '[git-grabber.http.core :refer :all]
-                        '[git-grabber.storage.config :refer :all]
-                        '[git-grabber.evolution.updating :refer :all])]
+                        ;;'[git-grabber.storage.config :refer :all]
+                        '[git-grabber.evolution.updating :refer :all]
+                        )]
   :profiles {:uberjar {:aot :all}})
