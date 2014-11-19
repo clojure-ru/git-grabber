@@ -2,7 +2,10 @@
   (:require [environ.core :refer [env]]
             [clj-http.client :as client]
             [clojure.walk :refer [keywordize-keys]]
-            [cheshire.core :refer [generate-string decode]]))
+            [cheshire.core :refer [generate-string decode]]
+            [taoensso.timbre :as timbre]))
+
+(timbre/refer-timbre)
 
 (declare authorized-request)
 
@@ -25,6 +28,8 @@
                :repos-url "https://api.github.com/repos/"
                :users-url "https://api.github.com/users/"})
 
+;; #TODO test page limit
+;; for example (when: (<= page 10))
 (defn search-repos
   ([params page]
    (let [request-params (merge (:search-params settings) params {:page page})]
@@ -69,11 +74,6 @@
 (def ^:dynamic *token*
   "Auth token for Git API" nil)
 
-
-;; #TODO
-;; 1. test -Dtoken for list
-;; 2. make lazy cyclic token list
-
 (def sleep-period
   "Sleep time when limit of requests has expired"
   10000) ;; 10 secs
@@ -99,18 +99,20 @@
 ; write formated log for errors: [cur-time][slip-time in msec] message
 ; throw error when exceeded limit of results
 
-(defn handle-error [error path]
-  (prn (.getMessage error)))
+(defn handle-error [err path]
+  (error (str "{SystemError} (" path ") " (.getMessage err))))
 
 (defn make-request-params [params]
   (merge params {:headers {:Authorization (str "token " *token*)}
                  :throw-exceptions false}))
 
-;; #TODO terminate???
 (defn handle-status [response]
-  (if (= (:status response) 200)
-    response
-    (Thread/sleep sleep-period)))
+  (letfn [(eval-and-sleep [x] (Thread/sleep sleep-period) nil)]
+    (case (:status response)
+      200 response
+      404 (error (get (-> response :body decode) "message"))
+      (info (str "[" (:status response) "]"
+                 (get (-> response :body decode) "message"))))))
 
 (defn authorized-request
   "Git API adapter"

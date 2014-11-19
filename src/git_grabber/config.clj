@@ -1,28 +1,17 @@
 (ns git-grabber.config
-  (:require [clojure.java.io :as io])
-  (:import [java.io File]))
+  (:require [taoensso.timbre :as timbre]
+            [clj-time.core :as t]
+            [clojure.java.io :as io]))
 
-(declare get-local-settings)
+(defn configure []
+  (when (not (.isDirectory (io/file "./log")))
+    (when (not (.mkdir (io/file "./log")))
+      (throw Exception "Can not create directory for log files"))))
 
-(def ^:dynamic *settings*
-  "Map settings for grabber system
-  -file contains same settings, but just local
-  -token from git for t-auth"
-  {:file "settings",
-   :token ""
-   })
+;; #TODO use merge-config! for new set of settings
+(timbre/set-config! [:appenders :standard-out :enabled?] false)
+(timbre/set-config! [:appenders :spit :enabled?] true)
+(timbre/set-config! [:shared-appender-config :spit-filename]
+                    (str "./log/" (t/today) ".log"))
 
-(defmacro with-local-settings [& body]
-  `(binding [*settings* (merge *settings* (get-local-settings))]
-    ~@body))
-
-(defn get-local-settings
-  "overload settings from file"
-  []
-  (let [settings-file (io/file (:file *settings*))]
-    (if (.exists settings-file)
-      (read-string (slurp settings-file))
-      (do
-        (prn "Settings file not found.
-             Set file path in git-grabber.config/*settings*")
-        {}))))
+(timbre/set-config! [:timestamp-pattern] "yyyy-MM-dd HH:mm:ss ZZ")
