@@ -13,13 +13,15 @@
   (when (= (count args) 0)
     (prn "Add token and db connection-params")
     (System/exit 1))
+  (timbre/info "====== START ======")
   (let [params (:options (parse-opts args cli-options))]
     ;; #TODO make print help
     (if (empty? params)
       (run-execution-protocol {:collect true
                                :information true
                                :counters true})
-      (run-execution-protocol params))))
+      (run-execution-protocol params)))
+  (timbre/info "====== FINISH ======"))
 
 ;; for :collect (collect {}) ;; #TODO collect best repositories from github
 (def execution-protocol
@@ -29,6 +31,7 @@
    :counters #(doall (update-repositories-counters))})
 
 (defn execute-task [tasks-keys operation]
+  (timbre/info (str "------ Execute task: "  (subs (str (key operation)) 1) " ------"))
   (when ((key operation) tasks-keys) ((val operation))))
 
 (defn run-execution-protocol [tasks-keys]
