@@ -50,8 +50,9 @@
   (let [rep (-> (authorized-request (str (:repos-url settings) repository-path)
                                 {:as :json})
             :body)]
-    (when (not rep)
-      (prn repository-path))
+    ;; TODO log this
+    ;;     (when (not rep)
+    ;;       (prn repository-path))
     rep))
 
 ; COMMITS
@@ -86,18 +87,8 @@
   `(binding [*token* ~(get-token)]
      ~@body))
 
-;;; EXCEPTION VARIANTS
-
-;;; with message
-;; - estimated-limit = 100
-;; - bad request
-
-;;; not have message
-;; - 404 when connection is broken
-
 ;; #TODO error log
 ; write formated log for errors: [cur-time][slip-time in msec] message
-; throw error when exceeded limit of results
 
 (defn handle-error [err path]
   (error (str "{SystemError} (" path ") " (.getMessage err))))
@@ -106,13 +97,23 @@
   (merge params {:headers {:Authorization (str "token " *token*)}
                  :throw-exceptions false}))
 
-(defn handle-status [response]
+(defn handle-status-error [message]
+  (error message)
+  (Thread/sleep sleep-period))
+
+(defn handle-status-bad-response [message]
+  (info message)
+  (Thread/sleep sleep-period))
+
+(defn handle-status [response path]
   (letfn [(eval-and-sleep [x] (Thread/sleep sleep-period) nil)]
     (case (:status response)
       200 response
-      404 (error (get (-> response :body decode) "message"))
-      (info (str "[" (:status response) "]"
-                 (get (-> response :body decode) "message"))))))
+      404 (handle-status-error (str "(" path ") "
+                                    (get (-> response :body decode) "message")))
+      (handle-status-bad-response (str "[" (:status response) "] "
+                                       "(" path ") "
+                                       (get (-> response :body decode) "message"))))))
 
 (defn authorized-request
   "Git API adapter"
@@ -120,5 +121,5 @@
   ([path params]
    (with-auth
      (try
-       (handle-status (client/get path (make-request-params params)))
+       (handle-status (client/get path (make-request-params params)) path)
      (catch Exception e (handle-error e path))))))

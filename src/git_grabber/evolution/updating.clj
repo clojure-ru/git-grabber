@@ -14,6 +14,8 @@
             [clj-time.core :as t]))
 
 
+;; #TODO update-owner-info
+
 (defn update-repositories-info []
   "Update general repository information"
   (pmap #(update-repository-info (get-repository-info-from-github %))

@@ -4,7 +4,8 @@
             [clj-time.core :as t]
 
             [git-grabber.storage.repositories :refer [repositories]]
-            [git-grabber.storage.config :refer :all]))
+            [git-grabber.storage.config :refer :all])
+  (:refer-clojure :exclude [update]))
 
 (defentity counter_types)
 

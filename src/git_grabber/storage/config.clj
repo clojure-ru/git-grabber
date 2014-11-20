@@ -1,7 +1,8 @@
 (ns git-grabber.storage.config
   (:require [korma.db :refer :all]
             [korma.core :refer :all]
-            [environ.core :refer [env]]))
+            [environ.core :refer [env]])
+  (:refer-clojure :exclude [update]))
 
 (defdb db (postgres (:connection env)))
 

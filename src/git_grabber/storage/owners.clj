@@ -1,6 +1,7 @@
 (ns git-grabber.storage.owners
   (:require [korma.core :refer :all]
-            [git-grabber.storage.config :refer :all]))
+            [git-grabber.storage.config :refer :all])
+  (:refer-clojure :exclude [update]))
 
 (defentity owners)
 

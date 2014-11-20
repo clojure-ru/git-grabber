@@ -4,7 +4,8 @@
             [clojure.set :refer [rename-keys]]
             [clj-time.coerce :refer [from-string to-sql-date]]
             [clj-time.core :as t]
-            [git-grabber.storage.owners :refer [get-owner-id-with-name]]))
+            [git-grabber.storage.owners :refer [get-owner-id-with-name]])
+  (:refer-clojure :exclude [update]))
 
 (defentity repositories)
 

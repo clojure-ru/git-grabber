@@ -16,6 +16,7 @@
 (defn insert-owner-name [repository-map]
   (:id (put-unique owners {:name (-> repository-map :owner :login)})))
 
+;; #TODO make trigger INSERT-OR-UPDATE and add owner-id
 (defn insert-repository-path [repository-map]
   (put-unique repositories (select-keys repository-map [:full_name])))
 
@@ -25,7 +26,7 @@
 
 (defn collect
   ([sort-request]
-   (prn (str "collect: " sort-request)) ;; bug: ""collect: starscollect: updated""
+;;    (prn (str "collect: " sort-request)) ;; bug: ""collect: starscollect: updated""
    (doall (map (fn [r] (insert-owner-name r) (insert-repository-path r))
          (take 1000 (lazy-seq-of-sorted-repos sort-request))))))
 

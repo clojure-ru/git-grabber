@@ -15,3 +15,18 @@
                     (str "./log/" (t/today) ".log"))
 
 (timbre/set-config! [:timestamp-pattern] "yyyy-MM-dd HH:mm:ss ZZ")
+
+(def short-sleep-period 600000) ;; 10 min
+(def long-sleep-period 1800000) ;; 30 min
+
+(def cli-options
+  [["-C" nil "collect information from github search"
+    :id :collect
+    :defult true]
+   ["-I" nil "update repository information"
+    :id :information
+    :defult true]
+   ["-U" nil "update repository counters"
+    :id :counters
+    :defult true]
+   ["-h" "--help"]])
