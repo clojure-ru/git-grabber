@@ -17,14 +17,12 @@ FIXME: explanation
 
 ## Options
 
+* -Dtoken=%token% (required) - github api token
+* -C                         - collect information from github search
+* -I                         - update repository information
+* -U                         - update repository counters
+
 ## Examples
-
-_in repl_
-
-```clojure
-(require 'git-grabber.core)
-(git-grabber.core/search) ;; search best matches for clojure lang
-```
 
 ## License
 
