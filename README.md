@@ -18,6 +18,7 @@ FIXME: explanation
 ## Options
 
 * -Dtoken=%token% (required) - github api token
+* -Duser=%user%              - username for db connection
 * -C                         - collect information from github search
 * -I                         - update repository information
 * -U                         - update repository counters
