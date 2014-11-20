@@ -4,7 +4,10 @@
             [environ.core :refer [env]])
   (:refer-clojure :exclude [update]))
 
-(defdb db (postgres (:connection env)))
+(defdb db (postgres {:db "github_repositories"
+                     :host "localhost"
+                     :port (or (:port env) "5432")
+                     :user (:user env)}))
 
 ;; SQLState: 23505 for duplicates
 (defn put [ent data]
