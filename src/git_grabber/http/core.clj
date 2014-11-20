@@ -84,7 +84,7 @@
   (or (:token env) (throw (Exception. "specify -Dtoken="))))
 
 (defmacro with-auth [& body]
-  `(binding [*token* ~(get-token)]
+  `(binding [*token* (get-token)]
      ~@body))
 
 ;; #TODO error log

@@ -4,15 +4,13 @@
                                                     update-repositories-counters]]
             [git-grabber.config :refer :all]
             [taoensso.timbre :as timbre]
-            [clojure.tools.cli :refer [parse-opts]]))
+            [clojure.tools.cli :refer [parse-opts]])
+  (:gen-class))
 
 (declare run-execution-protocol)
 
 (defn -main [& args]
   (configure)
-  (when (= (count args) 0)
-    (prn "Add token and db connection-params")
-    (System/exit 1))
   (timbre/info "====== START ======")
   (let [params (:options (parse-opts args cli-options))]
     ;; #TODO make print help

@@ -4,7 +4,7 @@
             [environ.core :refer [env]])
   (:refer-clojure :exclude [update]))
 
-(defdb db (postgres {:db "github_repositories"
+(defdb db (postgres {:db "grabber"
                      :host "localhost"
                      :port (or (:port env) "5432")
                      :user (:user env)}))
