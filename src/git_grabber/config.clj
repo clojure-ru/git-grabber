@@ -3,6 +3,8 @@
             [clj-time.core :as t]
             [clojure.java.io :as io]))
 
+(.addShutdownHook (Runtime/getRuntime) (timbre/info "====== KEYBOARD INTERRUPT ======"))
+
 (defn configure []
   (when (not (.isDirectory (io/file "./log")))
     (when (not (.mkdir (io/file "./log")))

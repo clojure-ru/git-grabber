@@ -17,11 +17,12 @@ FIXME: explanation
 
 ## Options
 
-* -Dtoken=%token% (required) - github api token
-* -Duser=%user%              - username for db connection
-* -C                         - collect information from github search
-* -I                         - update repository information
-* -U                         - update repository counters
+* -Dtoken=%token% (required)      - github api token
+* -Ddb.user=%user% (required)     - username for db connection
+* -Ddb.pass=%password% (required) - password for db connection
+* -C                              - collect information from github search
+* -I                              - update repository information
+* -U                              - update repository counters
 
 ## Examples
 

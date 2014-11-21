@@ -46,11 +46,12 @@
 
 ;; REPOSITORY
 
+;; #TODO make with delay for separated extractions
 (defn get-repository-info-from-github [repository-path]
   (let [rep (-> (authorized-request (str (:repos-url settings) repository-path)
                                 {:as :json})
             :body)]
-    ;; TODO log this
+    ;; #TODO log this
     ;;     (when (not rep)
     ;;       (prn repository-path))
     rep))

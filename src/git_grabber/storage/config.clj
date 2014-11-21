@@ -5,9 +5,8 @@
   (:refer-clojure :exclude [update]))
 
 (defdb db (postgres {:db "grabber"
-                     :host "localhost"
-                     :port (or (:port env) "5432")
-                     :user (:user env)}))
+                     :user (or (:db-user env) "")
+                     :password (or (:db-pass env) "")}))
 
 ;; SQLState: 23505 for duplicates
 (defn put [ent data]

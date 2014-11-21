@@ -1,4 +1,4 @@
-(defproject git-grabber "0.1.0-SNAPSHOT"
+(defproject git-grabber "0.1.0"
   :description "Calculate statistics for git repos on clojure"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
@@ -14,10 +14,4 @@
                  [com.taoensso/timbre "3.3.1"]]
   :main ^:skip-aot git-grabber.core
   :target-path "target/%s"
-  :injections [(require '[git-grabber.core :refer :all]
-;;                         '[git-grabber.config :refer :all]
-                        '[git-grabber.http.core :refer :all]
-                        ;;'[git-grabber.storage.config :refer :all]
-                        '[git-grabber.evolution.updating :refer :all]
-                        )]
   :profiles {:uberjar {:aot :all}})

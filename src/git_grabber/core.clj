@@ -30,7 +30,8 @@
 
 (defn execute-task [tasks-keys operation]
   (timbre/info (str "------ Execute task: "  (subs (str (key operation)) 1) " ------"))
-  (when ((key operation) tasks-keys) ((val operation))))
+  (when ((key operation) tasks-keys) ((val operation)))
+  (timbre/info (str "------ Task complited: "  (subs (str (key operation)) 1) " ------")))
 
 (defn run-execution-protocol [tasks-keys]
   (doall (map #(execute-task tasks-keys %) execution-protocol))) ;; execution bug in lein runtime
