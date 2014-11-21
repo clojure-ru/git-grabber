@@ -34,30 +34,4 @@
   (timbre/info (str "------ Task complited: "  (subs (str (key operation)) 1) " ------")))
 
 (defn run-execution-protocol [tasks-keys]
-  (doall (map #(execute-task tasks-keys %) execution-protocol))) ;; execution bug in lein runtime
-
-;; #TODO the Reloaded pattern for start updating and collect with LifeCycle protocol
-;; http://martintrojer.github.io/clojure/2013/09/07/retrofitting-the-reloaded-pattern-into-clojure-projects/
-;; (defprotocol LifeCycle
-;;   (start [this])
-;;   (stop [this]))
-
-;; (defn start-system [system]
-;;   (doseq [s (->> system :order (map system))]
-;;     (start s)))
-
-;; (defn stop-system [system]
-;;   (doseq [s (->> system :order (map system) reverse)]
-;;     (stop s)))
-
-;; (defrecord Grabber [state]
-;;   LifeCycle
-;;   (start [_]
-;;          (reset! state (-main)))
-;;   (stop [_]
-;;         (when @state
-;;           (-main)
-;;           (reset! state nil))))
-
-;; (defn run-Grabber []
-;;   (->Grabber (atom nil)))
+  (doall (map #(execute-task tasks-keys %) execution-protocol)))
