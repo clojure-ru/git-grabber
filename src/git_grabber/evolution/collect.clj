@@ -1,7 +1,7 @@
 (ns git-grabber.evolution.collect
 (:require [git-grabber.http.core :refer [lazy-search-repos]]
           [git-grabber.storage.repositories :refer [repositories]]
-          [git-grabber.storage.config :refer [put-unique]]
+          [git-grabber.storage.config :refer [put-unique put]]
           [git-grabber.storage.owners :refer [owners]]))
 
 (defn lazy-seq-of-sorted-repos
@@ -14,7 +14,7 @@
   (distinct (map #(:name %) (take 200 (lazy-seq-of-sorted-repos)))))
 
 (defn insert-owner-name [repository-map]
-  (:id (put-unique owners {:name (-> repository-map :owner :login)})))
+  (:id (put owners {:name (-> repository-map :owner :login)})))
 
 ;; #TODO make trigger INSERT-OR-UPDATE and add owner-id
 (defn insert-repository-path [repository-map]
