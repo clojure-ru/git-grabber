@@ -13,6 +13,7 @@ SET search_path = public, pg_catalog;
 ALTER TABLE ONLY public.counters DROP CONSTRAINT repository_counter;
 ALTER TABLE ONLY public.repositories DROP CONSTRAINT owner;
 ALTER TABLE ONLY public.counters DROP CONSTRAINT counter_type;
+DROP TRIGGER insert_owner ON public.owners;
 DROP TRIGGER insert_counter ON public.counters;
 DROP INDEX public.fki_owner;
 ALTER TABLE ONLY public.repositories DROP CONSTRAINT repository_path;
@@ -31,6 +32,7 @@ DROP TABLE public.owners;
 DROP TABLE public.counters;
 DROP SEQUENCE public.counter_type_id_seq;
 DROP TABLE public.counter_types;
+DROP FUNCTION public.insert_owner();
 DROP FUNCTION public.insert_counter();
 DROP EXTENSION plpgsql;
 DROP SCHEMA public;
@@ -81,6 +83,23 @@ BEGIN
 		ELSE
 			NEW.increment = 0;
 		END IF;
+		return NEW;
+	ELSE
+		return NULL;
+	END IF;
+END;
+$$;
+
+
+--
+-- Name: insert_owner(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION insert_owner() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	IF NOT EXISTS (select * from owners where name = NEW.name) THEN
 		return NEW;
 	ELSE
 		return NULL;
@@ -297,6 +316,13 @@ CREATE INDEX fki_owner ON repositories USING btree (owner_id);
 --
 
 CREATE TRIGGER insert_counter BEFORE INSERT ON counters FOR EACH ROW EXECUTE PROCEDURE insert_counter();
+
+
+--
+-- Name: insert_owner; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER insert_owner BEFORE INSERT ON owners FOR EACH ROW EXECUTE PROCEDURE insert_owner();
 
 
 --
