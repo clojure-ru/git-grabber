@@ -13,8 +13,6 @@ SET search_path = public, pg_catalog;
 ALTER TABLE ONLY public.counters DROP CONSTRAINT repository_counter;
 ALTER TABLE ONLY public.repositories DROP CONSTRAINT owner;
 ALTER TABLE ONLY public.counters DROP CONSTRAINT counter_type;
-DROP TRIGGER insert_owner ON public.owners;
-DROP TRIGGER insert_counter ON public.counters;
 DROP INDEX public.fki_owner;
 ALTER TABLE ONLY public.repositories DROP CONSTRAINT repository_path;
 ALTER TABLE ONLY public.repositories DROP CONSTRAINT repos_id;
@@ -32,8 +30,6 @@ DROP TABLE public.owners;
 DROP TABLE public.counters;
 DROP SEQUENCE public.counter_type_id_seq;
 DROP TABLE public.counter_types;
-DROP FUNCTION public.insert_owner();
-DROP FUNCTION public.insert_counter();
 DROP EXTENSION plpgsql;
 DROP SCHEMA public;
 --
@@ -65,48 +61,6 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 
 SET search_path = public, pg_catalog;
-
---
--- Name: insert_counter(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION insert_counter() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	old_count integer;
-BEGIN
-	IF NOT EXISTS (select * from counters where date = NEW.date and repository_id = NEW.repository_id and counter_id = NEW.counter_id) THEN
-		old_count := (SELECT count from counters where date = (NEW.date - INTERVAL '1 days') and repository_id = NEW.repository_id and counter_id = NEW.counter_id);
-		IF NOT (old_count IS NULL) THEN
-			NEW.increment = NEW.count - old_count;
-		ELSE
-			NEW.increment = 0;
-		END IF;
-		return NEW;
-	ELSE
-		return NULL;
-	END IF;
-END;
-$$;
-
-
---
--- Name: insert_owner(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION insert_owner() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-	IF NOT EXISTS (select * from owners where name = NEW.name) THEN
-		return NEW;
-	ELSE
-		return NULL;
-	END IF;
-END;
-$$;
-
 
 SET default_tablespace = '';
 
@@ -309,20 +263,6 @@ ALTER TABLE ONLY repositories
 --
 
 CREATE INDEX fki_owner ON repositories USING btree (owner_id);
-
-
---
--- Name: insert_counter; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER insert_counter BEFORE INSERT ON counters FOR EACH ROW EXECUTE PROCEDURE insert_counter();
-
-
---
--- Name: insert_owner; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER insert_owner BEFORE INSERT ON owners FOR EACH ROW EXECUTE PROCEDURE insert_owner();
 
 
 --

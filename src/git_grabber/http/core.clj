@@ -11,10 +11,10 @@
 
 ;;;; HELPERS
 
+;; #TODO (1*) handle end of data from request
 (defn lazy-request-with-pagination [params page request-fn]
   (let [response (request-fn params page)]
-    (if (and response (empty? response))
-      nil
+    (when (not (empty? response))
       (lazy-cat response (lazy-request-with-pagination params
                                                        (inc page)
                                                        request-fn)))))
@@ -28,8 +28,6 @@
                :repos-url "https://api.github.com/repos/"
                :users-url "https://api.github.com/users/"})
 
-;; #TODO test page limit
-;; for example (when: (<= page 10))
 (defn search-repos
   ([params page]
    (let [request-params (merge (:search-params settings) params {:page page})]
@@ -48,13 +46,9 @@
 
 ;; #TODO make with delay for separated extractions
 (defn get-repository-info-from-github [repository-path]
-  (let [rep (-> (authorized-request (str (:repos-url settings) repository-path)
-                                {:as :json})
-            :body)]
-    ;; #TODO log this
-    ;;     (when (not rep)
-    ;;       (prn repository-path))
-    rep))
+  (-> (authorized-request (str (:repos-url settings) repository-path)
+                          {:as :json})
+                :body))
 
 ; COMMITS
 
@@ -78,7 +72,7 @@
 
 (def sleep-period
   "Sleep time when limit of requests has expired"
-  10000) ;; 10 secs
+  600000) ;; 10 minutes
 
 (defn get-token []
   "Get token from enivironment variable."
@@ -98,23 +92,41 @@
   (merge params {:headers {:Authorization (str "token " *token*)}
                  :throw-exceptions false}))
 
-(defn handle-status-error [message]
-  (error message)
-  (Thread/sleep sleep-period))
+(defn log-error-response [response requests-path]
+  (error (str "(" requests-path ") "
+              (get (-> response :body decode) "message"))))
 
-(defn handle-status-bad-response [message]
-  (info message)
-  (Thread/sleep sleep-period))
+(defn log-bad-response [response requests-path]
+  (info (str "[" (:status response) "] "
+             "(" requests-path ") "
+             (get (-> response :body decode) "message"))))
 
-(defn handle-status [response path]
-  (letfn [(eval-and-sleep [x] (Thread/sleep sleep-period) nil)]
-    (case (:status response)
-      200 response
-      404 (handle-status-error (str "(" path ") "
-                                    (get (-> response :body decode) "message")))
-      (handle-status-bad-response (str "[" (:status response) "] "
-                                       "(" path ") "
-                                       (get (-> response :body decode) "message"))))))
+(defmulti handle-status
+  "Realization of GitHub API response-protocol"
+  (fn [{:keys [status]} _ _]
+    status))
+
+(defmethod handle-status 200 [response _ _]
+  response)
+
+(defmethod handle-status 403 [response path params]
+  "API rate limit exceeded for %user%."
+  (log-bad-response response path)
+  (Thread/sleep sleep-period)
+  (authorized-request path params))
+
+(defmethod handle-status 404 [response path _]
+  (log-error-response response path)
+  nil)
+
+(defmethod handle-status 422 [response path _]
+  "Only the first 1000 search results are available"
+  (log-error-response response path)
+  nil)
+
+(defmethod handle-status :default [response path _]
+  (log-bad-response response path)
+  nil)
 
 (defn authorized-request
   "Git API adapter"
@@ -122,5 +134,6 @@
   ([path params]
    (with-auth
      (try
-       (handle-status (client/get path (make-request-params params)) path)
-     (catch Exception e (handle-error e path))))))
+       (handle-status (client/get path (make-request-params params)) path params)
+       (catch Exception e (handle-error e path)))
+   )))
