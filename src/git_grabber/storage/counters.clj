@@ -1,6 +1,8 @@
 (ns git-grabber.storage.counters
   (:require [korma.core :refer :all]
-            [clj-time.coerce :refer [to-sql-date from-sql-date]]
+            [clj-time.coerce :refer [to-sql-date
+                                     from-sql-date
+                                     to-local-date]]
             [clj-time.core :as t]
 
             [git-grabber.storage.repositories :refer [repositories]]
@@ -38,3 +40,7 @@
          (select repositories
                  (fields :full_name)
                  (where {:id [not-in repo-ids-for-date]})))))
+
+(defn get-min-local-date []
+  (-> (select counters (order :date :ASC) (limit 1))
+      first :date from-sql-date to-local-date))
