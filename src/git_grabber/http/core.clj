@@ -63,6 +63,12 @@
   ([repo-path page]
    (lazy-request-with-pagination repo-path page get-repository-commits)))
 
+(defn get-commits-for-date-range [repository-path first-date last-date]
+    (:body (authorized-request (str (:repos-url settings) repository-path "/commits")
+                               {:query-params {:since first-date :until last-date }
+                                :as :json
+                                })))
+
 ;;;; LOW LEVEL
 
 ;; GIT AUTH

@@ -14,6 +14,8 @@
                  [com.taoensso/timbre "3.3.1"]]
   :main ^:skip-aot git-grabber.core
   :target-path "target/%s"
-  :injections [(require '[git-grabber.storage.counters :refer :all]
-                        '[git-grabber.evolution.recover :refer :all])]
+  :injections [(ns user)
+               (require '[git-grabber.storage.counters :refer :all]
+                        '[git-grabber.evolution.recover :refer :all]
+                        '[git-grabber.http.core :refer :all])]
   :profiles {:uberjar {:aot :all}})
