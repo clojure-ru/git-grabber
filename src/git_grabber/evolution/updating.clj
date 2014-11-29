@@ -3,8 +3,8 @@
                                            lazy-get-repository-commits]]
 
             [git-grabber.storage.repositories :refer [repositories
-                                                      get-all-repositoies-paths
-                                                      get-repository-id-with-path
+                                                      get-all-repositories-paths
+                                                      get-repository-id-by-path
                                                       update-repository-info]]
             [git-grabber.storage.config :refer [put-unique]]
             [git-grabber.storage.counters :refer [counters counter_types
@@ -19,14 +19,14 @@
 (defn update-repositories-info []
   "Update general repository information"
   (pmap #(update-repository-info (get-repository-info-from-github %))
-        (get-all-repositoies-paths)))
+        (get-all-repositories-paths)))
 
 (defn count-commits-on-github [repository-path]
   (count (lazy-get-repository-commits repository-path)))
 
 ;;;; FOR ALL COUNTERS
 (defn update-repository-counters [repository-map]
-  (let [repo-id (-> repository-map :full_name get-repository-id-with-path)
+  (let [repo-id (-> repository-map :full_name get-repository-id-by-path)
         counter-types-ids (get-counter-types-ids-with-names)]
     (when repo-id
      (update-counter repo-id

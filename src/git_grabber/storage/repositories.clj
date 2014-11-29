@@ -12,10 +12,13 @@
 (def repository-fields [:id :name :description :size :fork
                         :created_at :updated_at :pushed_at])
 
-(defn get-all-repositoies-paths []
+(defn get-all-repositories-paths []
   (map :full_name (select repositories (fields :full_name))))
 
-(defn get-repository-id-with-path [path]
+(defn get-all-repo-paths-and-ids []
+  (select repositories (fields [:full_name :path] :id)))
+
+(defn get-repository-id-by-path [path]
   (-> (select repositories
                    (fields :id)
                    (where {:full_name path})
