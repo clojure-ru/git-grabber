@@ -14,6 +14,8 @@ ALTER TABLE ONLY public.counters DROP CONSTRAINT repository_counter;
 ALTER TABLE ONLY public.repositories DROP CONSTRAINT owner;
 ALTER TABLE ONLY public.counters DROP CONSTRAINT counter_type;
 DROP INDEX public.fki_owner;
+DROP INDEX public.counters_increment;
+DROP INDEX public.counters_date;
 ALTER TABLE ONLY public.repositories DROP CONSTRAINT repository_path;
 ALTER TABLE ONLY public.repositories DROP CONSTRAINT repos_id;
 ALTER TABLE ONLY public.owners DROP CONSTRAINT owner_name;
@@ -256,6 +258,20 @@ ALTER TABLE ONLY repositories
 
 ALTER TABLE ONLY repositories
     ADD CONSTRAINT repository_path UNIQUE (full_name);
+
+
+--
+-- Name: counters_date; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX counters_date ON counters USING btree (date);
+
+
+--
+-- Name: counters_increment; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX counters_increment ON counters USING btree (increment DESC);
 
 
 --
