@@ -9,9 +9,13 @@
             [korma.core :as kc]
             [git-grabber.storage.counters :refer [get-dates-without-counters
                                                   recover-commit
+                                                  recover-commits
                                                   recover-counters-by-abs-counts
                                                   counters-ids
+                                                  inc-day
+                                                  dec-day
                                                   get-min-date
+                                                  date-formater
                                                   number-of-counter-types
                                                   recover-not-changed-counter
                                                   get-repositories-without-counters-for-interval]]
@@ -91,7 +95,7 @@
     (->> (get-commits-for-date-range (:path repo-id-path) begin end)
          (commits-group-by-dates get-commit-date-key) ;; reduce
          (map #(list (name (first %)) (count (second %))))
-         (recover-commit (:id repo-id-path) (:commits counters-ids)))))
+         (recover-commits (:id repo-id-path) (:commits counters-ids)))))
 
 ;; (defn recover-dates-
 
@@ -107,6 +111,7 @@
 
 ;; RECOVERY | VERSION 2
 
+;; ALG:
 ;; 1. Get repositories without counters from interval   1 <-------- is slow
 ;; 2. Make intervals for each repos
 ;; 3. get commits for intervals and store
@@ -120,7 +125,8 @@
 ;; 3. interval must be over three days
 
 (defn convert-sql-from-utc [date]
-  (t/to-time-zone (from-sql-date date) (t/default-time-zone)))
+  (let [d (t/to-time-zone (from-sql-date date) (t/default-time-zone))]
+    (t/date-time (t/year d) (t/month d) (t/day d))))
 
 ;; #TODO problem with time-zone
 (defn prepare-jdbc-array-dates [dates]
@@ -145,33 +151,70 @@
                         intv (rest intv))))
        (filter identity) first))
 
+;; #TODO GITHUB API bug???
+;==========================
+(defn test-commit-date [from to commit]
+  (let [commit-date (get-commit-date-key commit)]
+    (not (or (=  commit-date to)
+             (t/before? (f/parse date-formater to)
+                        (f/parse date-formater commit-date))
+             (=  commit-date from)
+             (t/before? (f/parse date-formater from)
+                        (f/parse date-formater commit-date))))))
+
+(defn filter-commits [from to commits]
+  (filter #(test-commit-date from to %) commits))
+
+;==========================
+
+;; #TODO recover one day
+(defn recover-commits-from-github [counter interval]
+  (let [from (f/unparse date-formater (inc-day (ffirst interval)))
+        to (f/unparse date-formater (dec-day (first (second interval))))
+        commits (filter-commits from to (get-commits-for-date-range (:full_name counter) from to))]
+    (if-not (empty? commits)
+      (->> commits
+           (commits-group-by-dates get-commit-date-key)
+           (map #(hash-map :counter_id (:counter_id counter)
+                           :repository_id (:repository_id counter)
+                           :increment (count (val %))
+                           :date (-> % key name from-string to-sql-date)
+                           ))
+           (reduce #(conj %1 (assoc %2 :count (+ (:count (last %1)) (:increment %2))))
+                   [{:count (second (first interval))}])
+           rest
+           (recover-commits (second interval)))
+      (recover-counters-by-abs-counts counter interval)))) ;; when GITHUB API error
+
 (defn counter-not-changed? [interval]
-  (> (Math/abs (- (second (second interval)) (second (first interval)))) 1))
+  (< (Math/abs (- (second (second interval)) (second (first interval)))) 2))
 
 (defn is-commits? [counter-id]
-  (= (counter-id (:commits @counter-id))))
-
+  (= counter-id (:commits @counters-ids)))
 
 (defn recover-counter [counter]
   (let [interval (make-interval-for-recover (:dates counter) (:counts counter))]
-    (try
       (when interval
         (if (counter-not-changed? interval)
           (recover-not-changed-counter counter interval)
-          (recover-counters-by-abs-counts counter interval)))
-    (catch Exception e
-      (prn (str "-- interval" interval "\n-- counter:" counter "\n== ERROR: " e))
-      (throw e)))))
+          (if (is-commits? (:counter_id counter))
+            (recover-commits-from-github counter interval)
+            (recover-counters-by-abs-counts counter interval)
+            )))))
 
-(defn recover-all-counters-for-repos [number-of-days repo-counters]
+(defn may-recover [counter]
+  (let [interval (make-interval-for-recover (:dates counter) (:counts counter))]
+    (when (and interval (counter-not-changed? interval))
+      counter)))
+
+;; #TODO must-recover not working
+;; (defn recover-all-counters-for-repos [repo-counters]
 ;;   (when (must-recover-counters? number-of-days (:dates (first repo-counters)))
-    (map recover-counter repo-counters))
+;;     ( repo-counters))
 
 (defn recover-counters-from-interval [from to]
-  (let [number-of-days (t/in-days (t/interval from to))]
    (->> (get-repositories-without-counters-for-interval from to)
-        (partition @number-of-counter-types)
-        (pmap #(recover-all-counters-for-repos number-of-days %)))))
+        (pmap #(recover-counter %))))
 
 ;; OTHER METHODS
 

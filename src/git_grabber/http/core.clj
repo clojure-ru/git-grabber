@@ -73,10 +73,8 @@
 ;; #TODO up log to upper frame
 (defn get-commits-for-date-range
   ([repository-path first-date last-date]
-   (get-commits-for-date-range repository-path
-                               first-date
-                               last-date
-                               start-page))
+   (get-commits-for-date-range
+    repository-path first-date last-date start-page))
   ([repository-path first-date last-date page]
     (let [url (str (:repos-url settings) repository-path "/commits")
           params {:query-params {:since first-date
@@ -85,6 +83,7 @@
                                  :page page}
                   :as :json}
           commits (:body (authorized-request url params))]
+;;       (when (empty? commits) (throw (Exception. (str "url " url " params " params))))
       (if (< (count commits) max-result-for-page)
         commits
         (do

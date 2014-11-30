@@ -1,6 +1,7 @@
 (ns git-grabber.config
   (:require [taoensso.timbre :as timbre]
             [clj-time.core :as t]
+            [clj-time.coerce :refer [from-string]]
             [clojure.java.io :as io]))
 
 (.addShutdownHook (Runtime/getRuntime) (Thread. #(timbre/info "====== KEYBOARD INTERRUPT ======")))
@@ -21,6 +22,10 @@
 (def short-sleep-period 600000) ;; 10 min
 (def long-sleep-period 1800000) ;; 30 min
 
+(defn parse-recover-interval [time-with-column-sep]
+  (let [interval (clojure.string/split time-with-column-sep #":")]
+    (map from-string interval)))
+
 (def cli-options
   [["-C" nil "collect information from github search"
     :id :collect
@@ -31,4 +36,7 @@
    ["-U" nil "update repository counters"
     :id :counters
     :defult true]
+   [nil "--recover FROM" "recover repository counters"
+    :id :recover
+    :parse-fn parse-recover-interval]
    ["-h" "--help"]])

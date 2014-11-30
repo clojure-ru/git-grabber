@@ -2,9 +2,11 @@
   (:require [git-grabber.evolution.collect :refer [sleep-collect collect]]
             [git-grabber.evolution.updating :refer [update-repositories-info
                                                     update-repositories-counters]]
+            [clj-time.core :as t]
             [git-grabber.config :refer :all]
             [taoensso.timbre :as timbre]
-            [clojure.tools.cli :refer [parse-opts]])
+            [clojure.tools.cli :refer [parse-opts]]
+            [git-grabber.evolution.recover :refer [recover-counters-from-interval]])
   (:gen-class))
 
 (declare run-execution-protocol)
@@ -33,5 +35,26 @@
   (when ((key operation) tasks-keys) ((val operation)))
   (timbre/info (str "------ Task complited: "  (subs (str (key operation)) 1) " ------")))
 
+;; #TODO or deftest???
+;; #TODO move to config
+(defn recover [from to]
+  (let [interval-error #(do (prn %) (prn "Please check interval and try again.") (System/exit 1))
+        message #(interval-error
+                  (str "Date of " % " interval is broken. Format yyyy-mm-dd:yyyy-mm-dd"))
+        ]
+    (when-not from
+      (interval-error (message  "start")))
+    (when-not to
+      (interval-error (message  "end")))
+    (when (t/after? from to)
+      (interval-error (str "Start date after end date.")))
+    (when (< (t/in-days (t/interval from to)) 3)
+      (interval-error (str "interval should be longer than 2 days.")))
+    (prn "all-ok")
+  (doall (recover-counters-from-interval from to))))
+
 (defn run-execution-protocol [tasks-keys]
-  (doall (map #(execute-task tasks-keys %) execution-protocol)))
+  (cond
+   (:recover tasks-keys)  (recover (-> tasks-keys :recover first)
+                                   (-> tasks-keys :recover second))
+   :else (doall (map #(execute-task tasks-keys %) execution-protocol))))

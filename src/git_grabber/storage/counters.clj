@@ -142,11 +142,11 @@
 
 ;; #TODO move to recover.clj
 
-;; #TODO optimize
+;; #TODO optimize! remove date
 (defn calculate-increment [interval start-count map-with-counts]
   (rest (reduce (fn [res pair]
             (conj res (assoc pair :increment
-              (- (:count pair) (:count (first res))))))
+              (- (:count pair) (:count (last res))))))
        [{:date (ffirst interval) :count start-count}] map-with-counts)))
 
 (defn make-counter-map [counter begin count-val date]
@@ -155,6 +155,14 @@
    :date (to-sql-date date)
    :count (+ (int count-val) begin)
    })
+
+(defn recover-last-increment [value-for-last counter-map]
+    (update counters
+        (set-fields {:increment (- (second value-for-last)
+                                   (:count counter-map))})
+        (where {:date (to-sql-date (first value-for-last))
+                :counter_id (:counter_id counter-map)
+                :repository_id (:repository_id counter-map)})))
 
 (defn recover-counters-by-abs-counts [counter interval]
 ;; counter {:dates #<Jdbc4Array {2014-11-22,2014-11-23,2014-11-28}>
@@ -171,18 +179,15 @@
                                    (iterate #(+ step %) 0) dates)]
     (insert counters
             (values (calculate-increment interval start-count counter-map)))
-    (update counters
-        (set-fields {:increment (- (second (second interval))
-                                   (:count (last counter-map)))})
-        (where {:date (to-sql-date (first (second interval)))
-                :counter_id (:counter_id counter)
-                :repository_id (:repository_id counter)}))))
+    (recover-last-increment (second interval) (last counter-map))))
 
+;; #TODO good method.
+(defn recover-commits [value-for-last counter-map]
+    (insert counters (values counter-map))
+    (recover-last-increment value-for-last (last counter-map)))
 
 ;; FEATURES
 
 ;; недостающие счетчики
 ;; select repositories.* from repositories left join counters on (id = repository_id) where counter_id is null
 
-
-;; select * from (values (date '2014-11-22'),(date '2014-11-23'),(date '2014-11-24')) as dates where column1 not in (select date from counters group by date)
