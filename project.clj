@@ -1,4 +1,4 @@
-(defproject git-grabber "0.1.0"
+(defproject git-grabber "0.1.1"
   :description "Calculate statistics for git repos on clojure"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
