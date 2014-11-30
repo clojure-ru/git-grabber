@@ -65,10 +65,6 @@
 
 ;; GETTERS
 
-(defn get-min-date []
-  (-> (select counters (order :date :ASC) (limit 1))
-      first :date from-sql-date))
-
 (defn get-repositories-names-without-counters [rdate]
   (let [repo-ids-for-date (subselect counters
                                      (fields :repository_id)
