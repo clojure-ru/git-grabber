@@ -106,13 +106,31 @@
   (filter #(= 0 (count-counters-for-date %))
           (date-range (midnight-date from) (midnight-date to))))
 
+(defn get-counter-for-date [repo-id counter-id date]
+  (->
+   (select counters
+           (fields :count)
+           (where {:date (to-sql-date date)
+                   :repository_id repo-id
+                   :counter_id counter-id})
+           (limit 1))
+   first
+   :count))
+
 ;; SETTERS
 
+
 (defn update-counter [repo-id counter-id counter-value]
-  (put counters {:date (to-sql-date (t/today))
-                 :repository_id repo-id
-                 :counter_id counter-id
-                 :count counter-value}))
+  (let [today (t/today)
+        old-count (get-counter-for-date repo-id
+                                        counter-id
+                                        (t/minus today (t/days 1)))]
+    (put counters {:date (to-sql-date today)
+                   :repository_id repo-id
+                   :counter_id counter-id
+                   :count counter-value
+                   :increment (if old-count (- counter-value old-count) 0)
+                   })))
 
 (defn recover-commit [repo-id counter-id dates-with-commits]
   (when-not (empty? dates-with-commits)
