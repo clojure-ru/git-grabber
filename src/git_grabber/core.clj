@@ -6,7 +6,8 @@
             [git-grabber.config :refer :all]
             [taoensso.timbre :as timbre]
             [clojure.tools.cli :refer [parse-opts]]
-            [git-grabber.evolution.recover :refer [recover-counters-from-interval]])
+            [git-grabber.evolution.recover :refer [recover-counters-from-interval
+                                                   recover-nullable-increments]])
   (:gen-class))
 
 (declare run-execution-protocol)
@@ -22,6 +23,12 @@
                                :counters true})
       (run-execution-protocol params)))
   (timbre/info "====== FINISH ======"))
+
+;; (defn -main [& args]
+;;   (configure)
+;;   (let [params (:options (parse-opts args cli-options))]
+;;     (prn params)))
+
 
 ;; for :collect (collect {}) ;; #TODO collect best repositories from github
 (def execution-protocol
@@ -50,11 +57,11 @@
       (interval-error (str "Start date after end date.")))
     (when (< (t/in-days (t/interval from to)) 3)
       (interval-error (str "interval should be longer than 2 days.")))
-    (prn "all-ok")
   (doall (recover-counters-from-interval from to))))
 
 (defn run-execution-protocol [tasks-keys]
   (cond
    (:recover tasks-keys)  (recover (-> tasks-keys :recover first)
                                    (-> tasks-keys :recover second))
+   (:recover-increments tasks-keys)  (recover-nullable-increments)
    :else (doall (map #(execute-task tasks-keys %) execution-protocol))))

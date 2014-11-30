@@ -7,12 +7,16 @@
             [clj-time.predicates :refer [same-date?]]
             [korma.core :as kc]
             [git-grabber.storage.counters :refer [get-repositories-without-counters-for-interval
+                                                  get-counters-with-null-increments
                                                   recover-commits
                                                   recover-counters-by-abs-counts
                                                   recover-not-changed-counter
+                                                  recover-increment
                                                   counters-ids
                                                   inc-day
                                                   dec-day
+                                                  calculate-increment
+                                                  get-counter-for-date
                                                   date-formater]]
             [git-grabber.storage.repositories :refer [get-all-repo-paths-and-ids]]
             [git-grabber.http.core :refer [authorized-request
@@ -127,6 +131,27 @@
     (when (and interval (counter-not-changed? interval))
       counter)))
 
+;; #TODO replace ->> with pmap
 (defn recover-counters-from-interval [from to]
    (->> (get-repositories-without-counters-for-interval from to)
         (pmap #(recover-counter %))))
+
+;; (defn calculate-increment [res counter-map]
+;;   (let [current-count (or (:count counter-map) 0)
+;;         last-count (or (:count (last res)) current-count)]
+;;   (conj res (assoc counter-map :increment (- current-count last-count)))))
+
+(defn recover-nullable-increment [{repo-id :repository_id cnt-id :counter_id
+                                   jdbc-dates :dates jdbc-counts :counts}]
+  (let [dates (prepare-jdbc-array-dates jdbc-dates)
+        first-count (get-counter-for-date repo-id cnt-id
+                                          (dec-day (first dates)))
+        hs-cnt #(hash-map :counter_id cnt-id :repository_id repo-id
+                          :date (to-sql-date %1) :count %2)
+        cnts (seq (.getArray jdbc-counts))]
+    (->> (map hs-cnt dates cnts)
+         (calculate-increment (or first-count (first cnts)))
+         (#(doall (map recover-increment %))))))
+
+(defn recover-nullable-increments []
+  (doall (pmap recover-nullable-increment (get-counters-with-null-increments))))

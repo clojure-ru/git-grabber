@@ -117,6 +117,15 @@
    first
    :count))
 
+
+(defn get-counters-with-null-increments []
+  (select counters
+      (fields :repository_id :counter_id
+              (raw "array_agg(count order by date) as counts")
+              (raw "array_agg(date order by date) as dates"))
+      (where {:increment nil})
+      (group :repository_id :counter_id)))
+
 ;; SETTERS
 
 
@@ -124,7 +133,7 @@
   (let [today (t/today)
         old-count (get-counter-for-date repo-id
                                         counter-id
-                                        (t/minus today (t/days 1)))]
+                                        (dec-day today))]
     (put counters {:date (to-sql-date today)
                    :repository_id repo-id
                    :counter_id counter-id
@@ -134,49 +143,43 @@
 
 (defn recover-commit [repo-id counter-id dates-with-commits]
   (when-not (empty? dates-with-commits)
-    (let [map-values (fn [[date commit-count]] (hash-map :repository_id repo-id
-                                                         :date (to-sql-date (f/parse date-formater date))
-                                                         :counter_id counter-id
-                                                         :increment commit-count))]
+    (let [map-values #(fn [[date commit-count]] (hash-map :repository_id repo-id
+                                                          :date (to-sql-date (f/parse date-formater date))
+                                                          :counter_id counter-id
+                                                          :increment commit-count))]
       (insert counters (values (map map-values dates-with-commits))))))
 
-(defn recover-not-changed-counter [counter interval]
+(defn recover-not-changed-counter [{repo-id :repository_id cnt-id  :counter_id}
+                                   interval]
   (let [counts (second (first interval))
         dates (date-range (inc-day (ffirst interval))
                           (first (second interval)))]
-    (-> (insert* counters)
-        (values
-         (map #(hash-map :counter_id (:counter_id counter)
-                         :repository_id (:repository_id counter)
-                         :increment 0
-                         :count counts
-                         :date (to-sql-date %)
-                         ) dates))
-         (exec))))
+    (insert counters
+            (values (map #(hash-map :counter_id repo-id :repository_id cnt-id
+                                    :increment 0 :count counts
+                                    :date (to-sql-date %))
+                         dates)))))
 
 ;; #TODO move to recover.clj
 
 ;; #TODO optimize! remove date
-(defn calculate-increment [interval start-count map-with-counts]
-  (rest (reduce (fn [res pair]
-            (conj res (assoc pair :increment
-              (- (:count pair) (:count (last res))))))
-       [{:date (ffirst interval) :count start-count}] map-with-counts)))
+(defn calculate-increment [start-count map-with-counts]
+  (rest (reduce #(conj %1 (assoc %2 :increment (- (:count %2) (:count (last %1)))))
+       [{:count start-count}] map-with-counts)))
 
-(defn make-counter-map [counter begin count-val date]
-  {:counter_id (:counter_id counter)
-   :repository_id (:repository_id counter)
-   :date (to-sql-date date)
-   :count (+ (int count-val) begin)
-   })
+(defn make-counter-map [{repo-id :repository_id cnt-id :counter_id}
+                        begin count-val date]
+  {:counter_id cnt-id :repository_id repo-id
+   :date (to-sql-date date) :count (+ (int count-val) begin)})
 
-(defn recover-last-increment [value-for-last counter-map]
+(defn recover-last-increment [value-for-last
+                              {current-count :count repo-id :repository_id
+                               cnt-id :counter_id}]
     (update counters
-        (set-fields {:increment (- (second value-for-last)
-                                   (:count counter-map))})
+        (set-fields {:increment (- (second value-for-last) current-count)})
         (where {:date (to-sql-date (first value-for-last))
-                :counter_id (:counter_id counter-map)
-                :repository_id (:repository_id counter-map)})))
+                :counter_id cnt-id
+                :repository_id repo-id})))
 
 (defn recover-counters-by-abs-counts [counter interval]
 ;; counter {:dates #<Jdbc4Array {2014-11-22,2014-11-23,2014-11-28}>
@@ -192,13 +195,19 @@
         counter-map (map #(make-counter-map counter start-count %1 %2)
                                    (iterate #(+ step %) 0) dates)]
     (insert counters
-            (values (calculate-increment interval start-count counter-map)))
+            (values (calculate-increment start-count counter-map)))
     (recover-last-increment (second interval) (last counter-map))))
 
 ;; #TODO good method.
 (defn recover-commits [value-for-last counter-map]
     (insert counters (values counter-map))
     (recover-last-increment value-for-last (last counter-map)))
+
+;; #TODO good method
+(defn recover-increment [counter-map]
+  (update counters
+          (set-fields {:increment (:increment counter-map)})
+          (where (select-keys counter-map [:repository_id :counter_id :date]))))
 
 ;; FEATURES
 

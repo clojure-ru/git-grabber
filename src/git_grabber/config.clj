@@ -39,4 +39,7 @@
    [nil "--recover FROM" "recover repository counters"
     :id :recover
     :parse-fn parse-recover-interval]
+   [nil "--recover-increments" "recover increments those null"
+    :id :recover-increments
+    :defult true]
    ["-h" "--help"]])
