@@ -24,11 +24,6 @@
       (run-execution-protocol params)))
   (timbre/info "====== FINISH ======"))
 
-;; (defn -main [& args]
-;;   (configure)
-;;   (let [params (:options (parse-opts args cli-options))]
-;;     (prn params)))
-
 
 ;; for :collect (collect {}) ;; #TODO collect best repositories from github
 (def execution-protocol

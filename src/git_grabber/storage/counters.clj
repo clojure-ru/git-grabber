@@ -155,7 +155,7 @@
         dates (date-range (inc-day (ffirst interval))
                           (first (second interval)))]
     (insert counters
-            (values (map #(hash-map :counter_id repo-id :repository_id cnt-id
+            (values (map #(hash-map :counter_id cnt-id :repository_id repo-id
                                     :increment 0 :count counts
                                     :date (to-sql-date %))
                          dates)))))
