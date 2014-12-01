@@ -5,7 +5,7 @@
             [clj-time.periodic :as p]
             [clj-time.format :as f]
             [git-grabber.utils.dates :refer
-             [inc-day dec-day date-range date-formater midnight-date]]
+             [inc-day dec-day date-range date-formater]]
             [git-grabber.storage.repositories :refer [repositories]]
             [git-grabber.storage.config :refer :all])
   (:refer-clojure :exclude [update]))

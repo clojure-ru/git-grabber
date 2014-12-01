@@ -22,9 +22,6 @@
   (or (= (t/plus before (t/days 1)) day)
       (same-date? before day)))
 
-(defn midnight-date [date]
-  (t/date-time (t/year date) (t/month date) (t/day date)))
-
 (defn inc-day [date]
   (t/plus date (t/days 1)))
 
