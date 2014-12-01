@@ -3,6 +3,7 @@
             [clj-http.client :as client]
             [clojure.walk :refer [keywordize-keys]]
             [cheshire.core :refer [generate-string decode]]
+            [git-grabber.statistica.core]
             [taoensso.timbre :as timbre]))
 
 (timbre/refer-timbre)

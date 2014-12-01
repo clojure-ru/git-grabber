@@ -1,45 +1,20 @@
 (ns git-grabber.evolution.recover
   (:require [clj-time.core :as t]
-            [clj-time.format :as f]
-            [clj-time.coerce :refer [to-sql-date
-                                     from-sql-date
-                                     from-string]]
-            [clj-time.predicates :refer [same-date?]]
-            [korma.core :as kc]
-            [git-grabber.storage.counters :refer [get-repositories-without-counters-for-interval
-                                                  get-counters-with-null-increments
-                                                  recover-commits
-                                                  recover-counters-by-abs-counts
-                                                  recover-not-changed-counter
-                                                  recover-increment
-                                                  counters-ids
-                                                  inc-day
-                                                  dec-day
-                                                  calculate-increment
-                                                  get-counter-for-date
-                                                  date-formater]]
-            [git-grabber.storage.repositories :refer [get-all-repo-paths-and-ids]]
-            [git-grabber.http.core :refer [authorized-request
-                                           get-commits-for-date-range]])
+            [clj-time.coerce :refer [to-sql-date from-string]]
+            [git-grabber.utils.dates :refer
+             [to-format-string from-format-string  yester-or-same-day
+              inc-day dec-day date-range diff-in-days from-sql-to-utc]]
+            [git-grabber.storage.counters :refer
+             [get-repositories-without-counters-for-interval
+              get-counters-with-null-increments recover-increment
+              recover-last-increment recover-counter-values
+              counters-ids get-counter-for-date]]
+            [git-grabber.http.core :refer [get-commits-for-date-range]])
   (:refer-clojure :exclude [update]))
 
+;; HELPERS
 
-(defn yester-or-same-day [before day]
-  (or (= (t/plus before (t/days 1)) day)
-      (same-date? before day)))
-
-;; #TODO maybe recur?
-(defn group-with-dates
-  ([access rest-list]
-   (when-not (empty? rest-list)
-     (group-with-dates [(first rest-list)] (rest rest-list) access)))
-  ([acc rest-list access]
-   (if-let [next-element (first rest-list)]
-     (if (yester-or-same-day (access (last acc)) (access next-element))
-       (group-with-dates (conj acc next-element) (rest rest-list) access)
-       (cons acc (group-with-dates [next-element] (rest rest-list) access)))
-     (list acc))))
-
+;; #TODO convert to date ???
 (defn get-commit-date-key [commit]
   (subs (-> commit :commit :committer :date) 0 10))
 
@@ -48,66 +23,87 @@
   (reduce #(merge-with concat %1 (hash-map (keyword (elem-key %2)) [%2]))
           {} in-list))
 
-(defn convert-sql-from-utc [date]
-  (let [d (t/to-time-zone (from-sql-date date) (t/default-time-zone))]
-    (t/date-time (t/year d) (t/month d) (t/day d))))
-
-;; #TODO problem with time-zone
 (defn prepare-jdbc-array-dates [dates]
-  (map convert-sql-from-utc (seq (.getArray dates))))
-
-;; #TODO logic error in interval
-(defn must-recover-counters? [all-days dates]
-  (let [dates# (prepare-jdbc-array-dates dates)]
-    (> all-days (count dates#))))
-
+  (map from-sql-to-utc (seq (.getArray dates))))
 
 ;; #TODO OR NOT in-days with intervals???
 (defn missing-dates? [begin end]
-  (not (= (t/plus begin (t/days 1)) end)))
+  (not (= (inc-day begin) end)))
 
 ;; #TODO make interval as hash
 (defn make-interval-for-recover [dates counts]
-  (->> dates
-       prepare-jdbc-array-dates
+  (letfn [(map-interval [[from to]]
+                        {:from-date (first from)    :to-date (first to)
+                         :start-count (second from) :end-count (second to)})]
+  (->> dates prepare-jdbc-array-dates
        (map #(list %2 %1) (seq (.getArray counts)))
        ((fn [intv] (map #(when (missing-dates? (first %1) (first %2)) [%1 %2])
                         intv (rest intv))))
-       (filter identity) first))
+       (filter identity) first
+       (#(when % (map-interval %))))))
+
+(defn calculate-increment [start-count map-with-counts]
+  (rest (reduce #(conj %1 (assoc %2 :increment (- (:count %2) (:count (last %1)))))
+       [{:count start-count}] map-with-counts)))
+
+;; RECOVER COUNTERS FROM DB
+
+(defn make-counter-map
+  [{repo-id :repository_id cnt-id :counter_id} from to counts]
+  (let [dates (date-range (inc-day from) to)]
+    (map #(hash-map :counter_id cnt-id :repository_id repo-id :increment 0
+                    :date (to-sql-date %1) :count %2)  dates counts)))
+
+(defn recover-counters-by-abs-counts
+  [counter {from :from-date to :to-date start :start-count end :end-count}]
+  (let [days (diff-in-days from to) step (/ (- end start) days)]
+    (->> (map #(+ (int %) start) (iterate #(+ step %) 0))
+         (make-counter-map counter from to )
+         (calculate-increment start) (recover-counter-values)
+         (#(recover-last-increment end (last %))))))
+
+(defn recover-not-changed-counter
+  [counter {from :from-date to :to-date start :start-count}]
+  (->> start repeat (make-counter-map counter from to) (recover-counter-values)))
+
+;; RECOVER FROM GITHUB
 
 ;; #TODO GITHUB API bug???
 ;==========================
 (defn test-commit-date [from to commit]
   (let [commit-date (get-commit-date-key commit)]
     (not (or (=  commit-date to)
-             (t/before? (f/parse date-formater to)
-                        (f/parse date-formater commit-date))
+             (t/before? (from-format-string to)
+                        (from-format-string commit-date))
              (=  commit-date from)
-             (t/before? (f/parse date-formater from)
-                        (f/parse date-formater commit-date))))))
+             (t/before? (from-format-string from)
+                        (from-format-string commit-date))))))
 
 (defn filter-commits [from to commits]
   (filter #(test-commit-date from to %) commits))
 
 ;==========================
 
+(defn reduce-map [map-key start-value reduce-fn maps]
+  (rest (reduce #(conj %1 (assoc %2 map-key (reduce-fn %2 (last %1))))
+                   [{map-key start-value}] maps)))
+
 ;; #TODO recover one day
-(defn recover-commits-from-github [counter interval]
-  (let [from (f/unparse date-formater (inc-day (ffirst interval)))
-        to (f/unparse date-formater (dec-day (first (second interval))))
-        commits (filter-commits from to (get-commits-for-date-range (:full_name counter) from to))]
+(defn recover-commits-from-github
+  [{repo-id :repository_id cnt-id :counter_id repo-name :full_name} as counter
+   {from :from-date to :to-date start :start-count end :end-count} as interval]
+  (let [from# (to-format-string (inc-day from))
+        to# (to-format-string (dec-day to))
+        commits (filter-commits from# to#
+                                (get-commits-for-date-range repo-name from# to#))]
     (if-not (empty? commits)
-      (->> commits
-           (commits-group-by-dates get-commit-date-key)
-           (map #(hash-map :counter_id (:counter_id counter)
-                           :repository_id (:repository_id counter)
+      (->> (commits-group-by-dates get-commit-date-key commits)
+           (map #(hash-map :counter_id cnt-id :repository_id repo-id
                            :increment (count (val %))
-                           :date (-> % key name from-string to-sql-date)
-                           ))
-           (reduce #(conj %1 (assoc %2 :count (+ (:count (last %1)) (:increment %2))))
-                   [{:count (second (first interval))}])
-           rest
-           (recover-commits (second interval)))
+                           :date (-> % key name from-string to-sql-date)))
+           (reduce-map :count start #(+ (:increment %1) (:count %2)))
+           (recover-counter-values)
+           (#(recover-last-increment end (last %))))
       (recover-counters-by-abs-counts counter interval)))) ;; when GITHUB API error
 
 (defn counter-not-changed? [interval]
@@ -123,8 +119,7 @@
           (recover-not-changed-counter counter interval)
           (if (is-commits? (:counter_id counter))
             (recover-commits-from-github counter interval)
-            (recover-counters-by-abs-counts counter interval)
-            )))))
+            (recover-counters-by-abs-counts counter interval))))))
 
 (defn may-recover [counter]
   (let [interval (make-interval-for-recover (:dates counter) (:counts counter))]
@@ -141,6 +136,7 @@
 ;;         last-count (or (:count (last res)) current-count)]
 ;;   (conj res (assoc counter-map :increment (- current-count last-count)))))
 
+;; #TODO set multiple values
 (defn recover-nullable-increment [{repo-id :repository_id cnt-id :counter_id
                                    jdbc-dates :dates jdbc-counts :counts}]
   (let [dates (prepare-jdbc-array-dates jdbc-dates)

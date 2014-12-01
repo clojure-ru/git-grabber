@@ -15,9 +15,6 @@
 (defn get-all-repositories-paths []
   (map :full_name (select repositories (fields :full_name))))
 
-(defn get-all-repo-paths-and-ids []
-  (select repositories (fields [:full_name :path] :id)))
-
 (defn get-repository-id-by-path [path]
   (-> (select repositories
                    (fields :id)
