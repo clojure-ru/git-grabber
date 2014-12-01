@@ -16,7 +16,7 @@
   (f/unparse date-formater date))
 
 (defn from-format-string [date]
-  (f/unparse date-formater date))
+    (f/parse date-formater date))
 
 (defn yester-or-same-day [before day]
   (or (= (t/plus before (t/days 1)) day)

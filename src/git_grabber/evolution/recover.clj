@@ -26,11 +26,9 @@
 (defn prepare-jdbc-array-dates [dates]
   (map from-sql-to-utc (seq (.getArray dates))))
 
-;; #TODO OR NOT in-days with intervals???
 (defn missing-dates? [begin end]
   (not (= (inc-day begin) end)))
 
-;; #TODO make interval as hash
 (defn make-interval-for-recover [dates counts]
   (letfn [(map-interval [[from to]]
                         {:from-date (first from)    :to-date (first to)
@@ -60,7 +58,7 @@
     (->> (map #(+ (int %) start) (iterate #(+ step %) 0))
          (make-counter-map counter from to )
          (calculate-increment start) (recover-counter-values)
-         (#(recover-last-increment end (last %))))))
+         (#(recover-last-increment to end (last %))))))
 
 (defn recover-not-changed-counter
   [counter {from :from-date to :to-date start :start-count}]
@@ -76,8 +74,8 @@
              (t/before? (from-format-string to)
                         (from-format-string commit-date))
              (=  commit-date from)
-             (t/before? (from-format-string from)
-                        (from-format-string commit-date))))))
+             (t/after? (from-format-string from)
+                       (from-format-string commit-date))))))
 
 (defn filter-commits [from to commits]
   (filter #(test-commit-date from to %) commits))
@@ -90,8 +88,8 @@
 
 ;; #TODO recover one day
 (defn recover-commits-from-github
-  [{repo-id :repository_id cnt-id :counter_id repo-name :full_name} as counter
-   {from :from-date to :to-date start :start-count end :end-count} as interval]
+  [{repo-id :repository_id cnt-id :counter_id repo-name :full_name :as counter}
+   {from :from-date to :to-date start :start-count end :end-count :as interval}]
   (let [from# (to-format-string (inc-day from))
         to# (to-format-string (dec-day to))
         commits (filter-commits from# to#
@@ -103,11 +101,11 @@
                            :date (-> % key name from-string to-sql-date)))
            (reduce-map :count start #(+ (:increment %1) (:count %2)))
            (recover-counter-values)
-           (#(recover-last-increment end (last %))))
+           (#(recover-last-increment to end (last %))))
       (recover-counters-by-abs-counts counter interval)))) ;; when GITHUB API error
 
-(defn counter-not-changed? [interval]
-  (< (Math/abs (- (second (second interval)) (second (first interval)))) 2))
+(defn counter-not-changed? [{start :start-count end :end-count}]
+  (< (Math/abs (- end start)) 2))
 
 (defn is-commits? [counter-id]
   (= counter-id (:commits @counters-ids)))
@@ -121,20 +119,9 @@
             (recover-commits-from-github counter interval)
             (recover-counters-by-abs-counts counter interval))))))
 
-(defn may-recover [counter]
-  (let [interval (make-interval-for-recover (:dates counter) (:counts counter))]
-    (when (and interval (counter-not-changed? interval))
-      counter)))
-
 ;; #TODO replace ->> with pmap
 (defn recover-counters-from-interval [from to]
-   (->> (get-repositories-without-counters-for-interval from to)
-        (pmap #(recover-counter %))))
-
-;; (defn calculate-increment [res counter-map]
-;;   (let [current-count (or (:count counter-map) 0)
-;;         last-count (or (:count (last res)) current-count)]
-;;   (conj res (assoc counter-map :increment (- current-count last-count)))))
+   (pmap recover-counter (get-repositories-without-counters-for-interval from to))
 
 ;; #TODO set multiple values
 (defn recover-nullable-increment [{repo-id :repository_id cnt-id :counter_id

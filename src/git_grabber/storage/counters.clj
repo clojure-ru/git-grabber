@@ -2,7 +2,6 @@
   (:require [korma.core :refer :all]
             [clj-time.coerce :refer [to-sql-date from-sql-date]]
             [clj-time.core :as t]
-            [clj-time.periodic :as p]
             [clj-time.format :as f]
             [git-grabber.utils.dates :refer
              [inc-day dec-day date-range date-formater]]
@@ -125,16 +124,15 @@
       (insert counters (values (map map-values dates-with-commits))))))
 
 (defn recover-last-increment
-  [value-for-last {current-count :count repo-id :repository_id cnt-id :counter_id}]
-    (update counters
-        (set-fields {:increment (- value-for-last current-count)})
-        (where {:date (to-sql-date (first value-for-last))
+  [date value-for-last {current-count :count repo-id :repository_id cnt-id :counter_id}]
+  (update counters
+        (set-fields {:increment (- value-for-last (or current-count value-for-last))})
+        (where {:date (to-sql-date date)
                 :counter_id cnt-id :repository_id repo-id})))
 
 (defn recover-counter-values [counter-map]
   (insert counters (values counter-map)))
 
-;; #TODO good method
 (defn recover-increment [counter-map]
   (update counters (set-fields {:increment (:increment counter-map)})
           (where (select-keys counter-map [:repository_id :counter_id :date]))))
