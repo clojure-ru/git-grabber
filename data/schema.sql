@@ -264,14 +264,14 @@ ALTER TABLE ONLY repositories
 -- Name: counters_date; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX counters_date ON counters USING btree (date);
+CREATE INDEX counters_date ON counters USING btree (date DESC);
 
 
 --
 -- Name: counters_increment; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX counters_increment ON counters USING btree (increment DESC);
+CREATE INDEX counters_increment ON counters USING btree (increment NULLS FIRST);
 
 
 --
