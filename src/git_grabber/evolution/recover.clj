@@ -3,7 +3,7 @@
             [clj-time.coerce :refer [to-sql-date from-string]]
             [git-grabber.utils.dates :refer
              [to-format-string from-format-string  yester-or-same-day
-              inc-day dec-day date-range diff-in-days from-sql-to-utc]]
+              inc-day dec-day date-range diff-in-days prepare-jdbc-array-dates]]
             [git-grabber.storage.counters :refer
              [get-repositories-without-counters-for-interval
               get-counters-with-null-increments recover-increment
@@ -22,9 +22,6 @@
   "elem-key - function: return string key for group elements"
   (reduce #(merge-with concat %1 (hash-map (keyword (elem-key %2)) [%2]))
           {} in-list))
-
-(defn prepare-jdbc-array-dates [dates]
-  (map from-sql-to-utc (seq (.getArray dates))))
 
 (defn missing-dates? [begin end]
   (not (= (inc-day begin) end)))
@@ -119,9 +116,8 @@
             (recover-commits-from-github counter interval)
             (recover-counters-by-abs-counts counter interval))))))
 
-;; #TODO replace ->> with pmap
 (defn recover-counters-from-interval [from to]
-   (pmap recover-counter (get-repositories-without-counters-for-interval from to))
+   (pmap recover-counter (get-repositories-without-counters-for-interval from to)))
 
 ;; #TODO set multiple values
 (defn recover-nullable-increment [{repo-id :repository_id cnt-id :counter_id

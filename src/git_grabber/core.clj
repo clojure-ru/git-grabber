@@ -3,6 +3,7 @@
             [git-grabber.evolution.updating :refer [update-repositories-info
                                                     update-repositories-counters]]
             [clj-time.core :as t]
+            [git-grabber.statistica.core]
             [git-grabber.config :refer :all]
             [taoensso.timbre :as timbre]
             [clojure.tools.cli :refer [parse-opts]]

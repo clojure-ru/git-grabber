@@ -7,10 +7,13 @@
 
 (def minute 60000)
 
+(def date-formater (f/formatter "YYYY-MM-dd"))
+
 (defn from-sql-to-utc [date]
   (c/from-long (- (.getTime date) (* (.getTimezoneOffset date) minute))))
 
-(def date-formater (f/formatter "YYYY-MM-dd"))
+(defn prepare-jdbc-array-dates [dates]
+  (map from-sql-to-utc (seq (.getArray dates))))
 
 (defn to-format-string [date]
   (f/unparse date-formater date))

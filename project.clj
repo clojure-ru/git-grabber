@@ -7,6 +7,7 @@
                  [clj-time "0.8.0"]
                  [clj-http "1.0.1"]
                  [environ "1.0.0"]
+                 [prismatic/plumbing "0.2.1"]
 ;;                  [debugger "0.1.3"]
                  [cheshire "5.3.1"]
                  [postgresql "9.3-1102.jdbc41"]
