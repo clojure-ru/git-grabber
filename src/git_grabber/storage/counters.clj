@@ -4,7 +4,7 @@
             [clj-time.core :as t]
             [clj-time.format :as f]
             [git-grabber.utils.dates :refer
-             [inc-day dec-day date-range date-formater]]
+            [inc-day dec-day date-range date-formater]]
             [git-grabber.storage.repositories :refer [repositories]]
             [git-grabber.storage.config :refer :all])
   (:refer-clojure :exclude [update]))
@@ -36,6 +36,15 @@
 (defentity counters)
 
 ;; GETTERS
+
+(defn get-last-date []
+ (-> 
+  (select* counters)
+  (fields :date)
+  (order :date :DESC)
+  (limit 1)
+  (exec)
+  first :date from-sql-date))
 
 (defn get-repositories-names-without-counters [rdate]
   (let [repo-ids-for-date (subselect counters

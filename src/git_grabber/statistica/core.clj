@@ -2,6 +2,8 @@
   (:require [git-grabber.storage.counters :refer [get-best-repositories]]
             [clj-time.core :as t]
             [plumbing.core :as pc]
+            [clojure.pprint :refer [print-table]]
+            [cheshire.core :refer [generate-string]]
             [plumbing.graph :as graph]
             [git-grabber.utils.dates :refer [prepare-jdbc-array-dates]]))
 
@@ -14,11 +16,14 @@
 (defn sum [fnn values]
   (apply + (map #(fnn %1) values)))
 
+(pc/defnk my-weight [increments n]
+  (float (apply + (map #(/ (* %1 n) %2) increments (range n 1 -1))))) 
+ 
 (pc/defnk my-weight2 [increments sum n]
   (apply + (map #(/ (Math/sqrt (/ (* %1 n) sum)) %2) increments (range n 1 -1)))) 
 
-(pc/defnk my-weight [increments sum n]
-  (apply + (map #(/ (* %1 n) sum %2) increments (range n 1 -1)))) 
+(pc/defnk my-weight3 [increments sum n]
+  (float (apply + (map #(/ (* %1 n) sum %2) increments (range n 1 -1))))) 
 
 (def stats-graph {:name   (pc/fnk [full_name]  full_name)
    :incrs  (pc/fnk [increments] increments)
@@ -28,7 +33,8 @@
    :moda   (pc/fnk [freq]       (first (sort-by val > freq)))
 ;; :fmoda  (pc/fnk [moda]       (sort-by val > (frequencies moda)))
    :w      my-weight
-;;   :w2     my-weight2
+   :w2     my-weight2
+   :w3     my-weight3
 
 ;;    :min   (pc/fnk [increments]            (reduce min increments))
 ;;    :max   (pc/fnk [increments]            (reduce max increments))
@@ -45,12 +51,12 @@
 (def stats (graph/eager-compile stats-graph))
 
 (defn prepare-data [repos]
-  (let [dates (prepare-jdbc-array-dates (:dates repos))
-        counts (seq (.getArray (:increments repos)))]
-    (assoc repos :dates dates :increments counts)))
+ (let [dates (prepare-jdbc-array-dates (:dates repos))
+       counts (seq (.getArray (:increments repos)))]
+  (assoc repos :dates dates :increments counts)))
 
 (defn make-statistics []
-  (let [from (t/minus (t/today) (t/days 10))
+  (let [from (t/minus (t/today) (t/days 8))
         to (t/today)]
     (map prepare-data (get-best-repositories from to limit-for-weekly-select))))
 
@@ -62,12 +68,40 @@
         (map #(hash-map (key %) (group-by get-min-freq (val %))))
         (into (sorted-map))))
 
+(defn calculate-globals [statistica]
+ (let [init-stat {:max-size-of-incrs -10000}]
+  (reduce (fn [res repo-stat]
+           (assoc res :max-size-of-incrs (max (count (:incrs repo-stat)) (:max-size-of-incrs res))))
+   init-stat statistica)))   
+
+(defn generate-and-sort [sort-key filter-fn]
+  (let [statistica (map stats (make-statistics))
+        globals (calculate-globals statistica)]
+   (sort-by sort-key > (filter #(filter-fn globals %) statistica))))
+
+(defn length-filter [{size :max-size-of-incrs} repo-stat]
+  (when (= (count (:incrs repo-stat)) size)
+    repo-stat))
+
+;; JSON GENERATE
+
+(def keys-for-json #(select-keys % [:name :incrs]))
+
+(defn generate-json-stat[statistica]
+  (spit "stat.json" (generate-string (map keys-for-json statistica))))
+
+
 ;; TEST PRINT
+
+(def keys-for-print #(select-keys % [:sum :incrs :moda :w3 :w2 :w :name]))
 
 (defn print-fmt  [xs]
   (map (pc/fnk [name w sum moda incrs]
          (prn (str name " " sum "  " (seq incrs) " " (seq moda) " " w)))
        xs))
+
+(defn print-tbl [xs]
+ (print-table (map keys-for-print xs)))
 
 (defn sort-and-print-frequencies [xs]
   (prn "------------------")
@@ -90,7 +124,8 @@
 
 (defn sort-by-moda [xs x]
   (prn " -------- MODA ---------- ")
-  (print-fmt (take 100 (sort-by #(-> % :sum) > (moda-filter x xs)))))
+  ;;(print-fmt )
+  (print-table (map keys-for-print (take 100 (sort-by #(-> % :sum) > (moda-filter x xs))))))
 
 ;; END TEST PRINT
 
@@ -99,7 +134,6 @@
 ;;    (doall (map sort-and-print-frequencies (gigants ws)))
 ;;    (sort-and-print-probs (filter #(> 50 (:sum %)) ws))
     ;;(sort-by-moda ws)
- 
-(defn classifaction []
-  (let [ws (best-increments)]
-   ws))
+
+(defn classifaction [sort-key]
+  (generate-and-sort sort-key length-filter))
