@@ -17,16 +17,12 @@
 
 (defn -main [& args]
   (configure)
-  (timbre/info "====== START ======")
-  (let [params (:options (parse-opts args cli-options))]
-    ;; #TODO make print help
-    (if (empty? params)
-      (run-execution-protocol {:collect true
-                               :information true
-                               :counters true})
-      (run-execution-protocol params)))
-  (timbre/info "====== FINISH ======"))
-
+  (let [opts (parse-opts args cli-options)]
+    (if (empty? (:options opts))
+      (do (println (:summary opts)) (System/exit 0))
+      (do (timbre/info "====== START ======")
+          (run-execution-protocol (:options opts))
+          (timbre/info "====== FINISH ======")))))
 
 ;; for :collect (collect {}) ;; #TODO collect best repositories from github
 (def execution-protocol
@@ -68,5 +64,8 @@
    (:recover tasks-keys)  (recover (-> tasks-keys :recover first)
                                    (-> tasks-keys :recover second))
    (:generate tasks-keys)  (generate (:generate tasks-keys))
+   (:all tasks-keys)        (run-execution-protocol {:collect true
+                                                    :information true
+                                                    :counters true})
    (:recover-increments tasks-keys)  (recover-nullable-increments)
    :else (doall (map #(execute-task tasks-keys %) execution-protocol))))
