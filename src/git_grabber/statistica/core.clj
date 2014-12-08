@@ -5,16 +5,12 @@
             [clojure.pprint :refer [print-table]]
             [cheshire.core :refer [generate-string]]
             [plumbing.graph :as graph]
+            [clojure.string :as string]
             [git-grabber.utils.dates :refer [prepare-jdbc-array-dates]]))
 
 
 (def limit-for-weekly-select 1000)
-
-(defn sum2 [fnn values probabilities]
-  (apply + (map #(* (fnn %1) %2) values probabilities)))
-
-(defn sum [fnn values]
-  (apply + (map #(fnn %1) values)))
+(def github-http-prefix "https://github.com/")
 
 (pc/defnk my-weight [increments n]
   (float (apply + (map #(/ (* %1 n) %2) increments (range n 1 -1))))) 
@@ -25,8 +21,11 @@
 (pc/defnk my-weight3 [increments sum n]
   (float (apply + (map #(/ (* %1 n) sum %2) increments (range n 1 -1))))) 
 
-(def stats-graph {:name   (pc/fnk [full_name]  full_name)
-   :incrs  (pc/fnk [increments] increments)
+(def stats-graph {
+   :name   (pc/fnk [full_name]  (last (string/split full_name #"/")))
+   :url    (pc/fnk [full_name]  (str github-http-prefix full_name))
+   :incrs  (pc/fnk [increments] (reduce #(conj %1 (+ %2 (last %1))) [(first increments)] (rest increments)))
+   ;;:incrs  (pc/fnk [increments] increments)
    :n      (pc/fnk [increments] (count increments))
    :sum    (pc/fnk [increments] (apply + increments))
    :freq   (pc/fnk [increments] (frequencies increments))
@@ -85,11 +84,10 @@
 
 ;; JSON GENERATE
 
-(def keys-for-json #(select-keys % [:name :incrs]))
+(def keys-for-json #(select-keys % [:name :incrs :url]))
 
-(defn generate-json-stat[statistica]
-  (spit "stat.json" (generate-string (map keys-for-json statistica))))
-
+(defn generate-json-stat [statistica]
+  (generate-string (map keys-for-json statistica)))
 
 ;; TEST PRINT
 
@@ -100,8 +98,8 @@
          (prn (str name " " sum "  " (seq incrs) " " (seq moda) " " w)))
        xs))
 
-(defn print-tbl [xs]
- (print-table (map keys-for-print xs)))
+(defn print-tbl [statistica]
+ (print-table (map keys-for-print statistica)))
 
 (defn sort-and-print-frequencies [xs]
   (prn "------------------")
@@ -135,5 +133,5 @@
 ;;    (sort-and-print-probs (filter #(> 50 (:sum %)) ws))
     ;;(sort-by-moda ws)
 
-(defn classifaction [sort-key]
+(defn classification [sort-key]
   (generate-and-sort sort-key length-filter))

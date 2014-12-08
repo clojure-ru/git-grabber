@@ -1,62 +1,43 @@
 var ctx = document.getElementById("image").getContext("2d");
 var gitChart = null;
 
-var lineOpts = {
-	fillColor: "rgba(151,187,205,0.1)",
-    strokeColor: "rgba(151,187,205,1)",
-    pointColor: "rgba(151,187,205,1)",
-    pointStrokeColor: "#fff",
-    pointHighlightFill: "#fff",
-    pointHighlightStroke: "rgba(151,187,205,1)",
-};
-function mergeOptions(obj1,obj2){
-    var obj3 = {};
-    for (var attrname in obj1) { obj3[attrname] = obj1[attrname]; }
-    for (var attrname in obj2) { obj3[attrname] = obj2[attrname]; }
-    return obj3;
-}
+var lineColors = ["#C8001A", "#2F3871", "#FF5022", "#FFAF00", "#5083F1", "#002157", "#0076A3", "#BD8CBF", "#603913", "#C69C6D"]
+
 function makeChart(repositories){
 	var data = []; 
-	repositories.forEach(function(el){
-		var line = mergeOptions(lineOpts, {});
-		line['label'] = el['name'];
-		line['data'] = el['incrs'];
+	repositories.forEach(function(el, idx){
+		var line = {
+			label: el['name'],
+			data: el['incrs'],
+			url: el['url'],
+			strokeColor: lineColors[idx],
+			pointColor: lineColors[idx],
+			fillColor: "rgba(151,187,205,0.05)",
+			pointStrokeColor: "#fff",
+			pointHighlightFill: "#fff",
+			pointHighlightStroke: "rgba(151,187,205,1)",
+		};
 		data.push(line);
 	});
-	gitChart = new Chart(document.getElementById("image").getContext("2d")).Line(
-		// data
-		{
-			labels: ["29.11.14", "30.11.14", "1.12.14", "2.12.14", "3.12.14", "4.12.14", "5.12.14"],
-			datasets: data
-		}, {
-			datasetStroke : true,
-			showTooltips: true,
-		}
-	);
-	data.shift();
-	gitChart = new Chart(document.getElementById("image1").getContext("2d")).Line(
-		// data
-		{
-			labels: ["29.11.14", "30.11.14", "1.12.14", "2.12.14", "3.12.14", "4.12.14", "5.12.14"],
-			datasets: data
-		}, {
-			datasetStroke : true,
-			showTooltips: true,
-		}
-	);
-	data.shift();
-	var sss = "i wonna be..."
-	var x = 1;
-	gitChart = new Chart(document.getElementById("image2").getContext("2d")).Line(
-		// data
-		{
-			labels: ["29.11.14", "30.11.14", "1.12.14", "2.12.14", "3.12.14", "4.12.14", "5.12.14"],
-			datasets: data
-		}, {
-			datasetStroke : true,
-			showTooltips: true,
+	var legendStr = "<ul class=\"line-legend\">";
+	for (var i=0; i<data.length; i++){
+		legendStr += "<li><span style=\"background-color:" + data[i].strokeColor + "\">&nbsp;&nbsp;&nbsp;</span>&nbsp;&nbsp;";
+		legendStr += "<a href=\"" + data[i].url + "\">" + data[i].label + "</a>";
+		legendStr += "</li>";
+	}
+	legendStr += "</ul>";
 
-			multiTooltipTemplate: "<%= name %><%= value %>",
+	document.getElementById("image").parentNode.innerHTML += legendStr;
+	gitChart1 = new Chart(document.getElementById("image").getContext("2d")).Line(
+		// data
+		{
+			labels: ["29.11.14", "30.11.14", "1.12.14", "2.12.14", "3.12.14", "4.12.14", "5.12.14"],
+			datasets: data,
+		}, {
+			animation: false,
+			datasetStroke : true,
+			showTooltips: true,
+			multiTooltipTemplate: "<%= datasetLabel %>: <%= value %>"
 		}
 	);
 }
