@@ -12,9 +12,11 @@
                  [cheshire "5.3.1"]
                  [postgresql "9.3-1102.jdbc41"]
                  [korma "0.4.0"]
+                 [com.taoensso/carmine "2.9.0"]
                  [com.taoensso/timbre "3.3.1"]]
   :main ^:skip-aot git-grabber.core
   :target-path "target/%s"
+  :env { :redis-port 6379 }
   :injections [(ns user)
                (require '[git-grabber.storage.counters :refer :all]
                         '[git-grabber.evolution.recover :refer :all]

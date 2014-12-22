@@ -11,6 +11,7 @@
                                                   update-counter
                                                   get-counter-types-ids-with-names
                                                   get-repositories-names-without-counters]]
+            [git-grabber.storage.redis :as r]
             [clj-time.core :as t]))
 
 
@@ -47,5 +48,7 @@
      nil)))
 
 (defn update-repositories-counters []
-  (pmap #(update-repository-counters (get-repository-info-from-github %))
-        (get-repositories-names-without-counters (t/today))))
+  (let [today (t/today)]
+    (doall (pmap #(update-repository-counters (get-repository-info-from-github %))
+                 (get-repositories-names-without-counters today))
+           (r/set "last-update-date" today))))
