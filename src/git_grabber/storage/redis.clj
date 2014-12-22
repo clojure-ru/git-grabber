@@ -1,4 +1,5 @@
 (ns git-grabber.storage.redis
+  (:refer-clojure :exclude [get set])
   (:require [taoensso.carmine :as car :refer (wcar)]
             [environ.core :refer [env]]))
 
