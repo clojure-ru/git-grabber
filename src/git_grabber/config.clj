@@ -22,7 +22,9 @@
 (def short-sleep-period 600000) ;; 10 min
 (def long-sleep-period 1800000) ;; 30 min
 
-(declare parse-recover-interval)
+(defn parse-recover-interval [time-with-column-sep]
+  (let [interval (clojure.string/split time-with-column-sep #":")]
+    (map from-string interval)))
 
 (def cli-options
   [["-A" "--all" "collect and update all information from github search"
@@ -46,6 +48,3 @@
     :id :recover-increments
     :defult true]])
 
-(defn parse-recover-interval [time-with-column-sep]
-  (let [interval (clojure.string/split time-with-column-sep #":")]
-    (map from-string interval)))

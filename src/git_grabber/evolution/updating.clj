@@ -48,7 +48,5 @@
      nil)))
 
 (defn update-repositories-counters []
-  (let [today (t/today)]
-    (doall (pmap #(update-repository-counters (get-repository-info-from-github %))
-                 (get-repositories-names-without-counters today))
-           (r/set "last-update-date" today))))
+  (pmap #(update-repository-counters (get-repository-info-from-github %))
+        (get-repositories-names-without-counters (t/today))))
