@@ -19,7 +19,7 @@
 
 (defn update-repositories-info []
   "Update general repository information"
-  (pmap #(update-repository-info (get-repository-info-from-github %))
+  (pmap #(update-repository-info (get-repository-info-from-github %1) %1)
         (get-all-repositories-paths)))
 
 (defn count-commits-on-github [repository-path]

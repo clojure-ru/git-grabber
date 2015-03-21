@@ -4,6 +4,7 @@
             [clojure.set :refer [rename-keys]]
             [clj-time.coerce :refer [from-string to-sql-date]]
             [clj-time.core :as t]
+            [taoensso.timbre :as timbre]
             [git-grabber.storage.owners :refer [get-owner-id-with-name]])
   (:refer-clojure :exclude [update]))
 
@@ -41,10 +42,14 @@
          (convert-date fields :updated_at)
          (convert-date fields :pushed_at)))
 
-(defn update-repository-info [repository-map]
-  (let [prepare-fields (-> repository-map
-                           prepare-fields-keys
-                           prepare-repository-dates)]
-    (update repositories
-            (set-fields (prepare-repository-owner repository-map prepare-fields))
-            (where (select-keys repository-map [:full_name])))))
+(defn update-repository-info [repository-map repository-path]
+  (if-not repository-map
+          (timbre/info (str "[Empty Repository Info for update] "
+                     "|| storage/repositories.cljs:48 || "
+                     repository-path))
+          (let [prepare-fields (-> repository-map
+                                   prepare-fields-keys
+                                   prepare-repository-dates)]
+            (update repositories
+                    (set-fields (prepare-repository-owner repository-map prepare-fields))
+                    (where (select-keys repository-map [:full_name]))))))
