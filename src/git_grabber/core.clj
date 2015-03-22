@@ -3,14 +3,11 @@
             [git-grabber.evolution.updating :refer [update-repositories-info
                                                     update-repositories-counters]]
             [clj-time.core :as t]
-            [git-grabber.statistica.core]
             [git-grabber.config :refer :all]
             [taoensso.timbre :as timbre]
             [clojure.tools.cli :refer [parse-opts]]
             [git-grabber.evolution.recover :refer [recover-counters-from-interval
-                                                   recover-nullable-increments]]
-            [git-grabber.statistica.core :refer [generate-json-stat
-                                                 classification]])
+                                                   recover-nullable-increments]])
   (:gen-class))
 
 (declare run-execution-protocol)
@@ -53,17 +50,10 @@
       (interval-error (str "interval should be longer than 2 days.")))
   (doall (recover-counters-from-interval from to))))
 
-;; #TODO check directories and file extension
-(defn generate [file-path]
-  (let [file-error #(do (prn %) (prn "Please check file-name and try again.") (System/exit 1))]
-    (when (= file-path "") (file-error "Empty file-name."))
-    (spit file-path (generate-json-stat (take 10 (classification :w))))))
-
 (defn run-execution-protocol [tasks-keys]
   (cond
    (:recover tasks-keys)  (recover (-> tasks-keys :recover first)
                                    (-> tasks-keys :recover second))
-   (:generate tasks-keys)  (generate (:generate tasks-keys))
    (:all tasks-keys)        (run-execution-protocol {:collect true
                                                     :information true
                                                     :counters true})

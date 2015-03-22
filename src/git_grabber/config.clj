@@ -42,8 +42,6 @@
    [nil "--recover FROM:TO" "recover repository counters"
     :id :recover
     :parse-fn parse-recover-interval]
-   [nil "--generate FILE_NAME" "generate statistics of counters"
-    :id :generate]
    [nil "--recover-increments" "recover increments those null"
     :id :recover-increments
     :defult true]])

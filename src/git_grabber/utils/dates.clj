@@ -1,6 +1,6 @@
 (ns git-grabber.utils.dates
-  (:require [clj-time.coerce :as c]
-            [clj-time.core :as t]
+  (:require [clj-time.core :as t]
+            [clj-time.coerce :as c] 
             [clj-time.format :as f]
             [clj-time.periodic :as p]
             [clj-time.predicates :refer [same-date?]]))

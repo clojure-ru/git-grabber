@@ -11,7 +11,6 @@
                                                   update-counter
                                                   get-counter-types-ids-with-names
                                                   get-repositories-names-without-counters]]
-            [git-grabber.storage.redis :as r]
             [clj-time.core :as t]))
 
 
