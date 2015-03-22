@@ -4,7 +4,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/tools.cli "0.3.1"]
-                 [clj-time "0.8.0"]
+                 [clj-time "0.9.0"]
                  [clj-http "1.0.1"]
                  [environ "1.0.0"]
                  [cheshire "5.3.1"]
@@ -13,8 +13,4 @@
                  [com.taoensso/carmine "2.9.0"]
                  [com.taoensso/timbre "3.3.1"]]
   :main ^:skip-aot git-grabber.core
-  :injections [(ns user)
-               (require '[git-grabber.storage.counters :refer :all]
-                        '[git-grabber.evolution.recover :refer :all]
-                        '[git-grabber.http.core :refer :all])]
   :profiles {:uberjar {:aot :all}})
