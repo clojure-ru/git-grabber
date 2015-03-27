@@ -3,6 +3,7 @@
 --
 
 SET statement_timeout = 0;
+SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
@@ -161,7 +162,8 @@ CREATE TABLE repositories (
     size bigint,
     is_fork boolean,
     forks_ids bigint[],
-    parent_id bigint
+    parent_id bigint,
+    is_clojure boolean DEFAULT true
 );
 
 
