@@ -9,7 +9,7 @@
               get-counters-with-null-increments recover-increment
               recover-last-increment recover-counter-values
               counters-ids get-counter-for-date]]
-            [git-grabber.http.core :refer [get-commits-for-date-range]]))
+            [git-grabber.http.repository :refer [get-commits-for-date-range]]))
 
 ;; HELPERS
 

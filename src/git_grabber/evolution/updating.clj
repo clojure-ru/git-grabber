@@ -1,6 +1,6 @@
 (ns git-grabber.evolution.updating
-  (:require [git-grabber.http.core :refer [get-repository-info-from-github
-                                           lazy-get-repository-commits]]
+  (:require [git-grabber.http.repository :refer [get-repository-info-from-github
+                                                 lazy-get-repository-commits]]
 
             [git-grabber.storage.repositories :refer [repositories
                                                       get-all-repositories-paths

@@ -1,5 +1,5 @@
 (ns git-grabber.evolution.collect
-(:require [git-grabber.http.core :refer [lazy-search-repos]]
+(:require [git-grabber.http.repository :refer [lazy-search-repos]]
           [git-grabber.storage.repositories :refer [repositories]]
           [git-grabber.storage.config :refer [put-unique]]
           [git-grabber.storage.owners :refer [owners]]))
@@ -37,3 +37,4 @@
     (do
      (collect sort-request)
      (Thread/sleep sleep-time))))
+
