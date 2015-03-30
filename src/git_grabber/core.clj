@@ -1,13 +1,16 @@
 (ns git-grabber.core
-  (:require [git-grabber.evolution.collect :refer [sleep-collect collect]]
+  (:require [git-grabber.evolution.collect :refer [sleep-collect collect
+                                                   add-from-user]]
             [git-grabber.evolution.updating :refer [update-repositories-info
+                                                    set-clojure-flag-for-repo
                                                     update-repositories-counters]]
             [clj-time.core :as t]
             [git-grabber.config :refer :all]
             [taoensso.timbre :as timbre]
             [clojure.tools.cli :refer [parse-opts]]
             [git-grabber.evolution.recover :refer [recover-counters-from-interval
-                                                   recover-nullable-increments]])
+                                                   recover-nullable-increments]]
+            [git-grabber.evolution.repo-validation :refer [test-all-repositories-for-clojure]])
   (:gen-class))
 
 (declare run-execution-protocol)
@@ -50,12 +53,20 @@
       (interval-error (str "interval should be longer than 2 days.")))
   (doall (recover-counters-from-interval from to))))
 
+(defn try-set-repo-clojure-flag [user-req]
+  (let [[repo-name flag] (clojure.string/split user-req #":")]
+    (set-clojure-flag-for-repo repo-name flag)))
+
 (defn run-execution-protocol [tasks-keys]
   (cond
-   (:recover tasks-keys)  (recover (-> tasks-keys :recover first)
-                                   (-> tasks-keys :recover second))
-   (:all tasks-keys)        (run-execution-protocol {:collect true
-                                                    :information true
-                                                    :counters true})
-   (:recover-increments tasks-keys)  (recover-nullable-increments)
-   :else (doall (map #(execute-task tasks-keys %) execution-protocol))))
+    (not (empty? (:add-repo tasks-keys))) (add-from-user (:add-repo tasks-keys))
+    (:test-for-all tasks-keys) (test-all-repositories-for-clojure)
+    (:manualy tasks-keys) (add-from-user (try-set-repo-clojure-flag (:manualy tasks-keys)))
+    (:recover tasks-keys)  (recover (-> tasks-keys :recover first)
+                                    (-> tasks-keys :recover second))
+    (:all tasks-keys)        (run-execution-protocol {:collect true
+                                                      :information true
+                                                      :counters true})
+    (:recover-increments tasks-keys)  (recover-nullable-increments)
+    :else (doall (map #(execute-task tasks-keys %) execution-protocol))))
+

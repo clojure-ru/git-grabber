@@ -5,7 +5,9 @@
             [git-grabber.storage.repositories :refer [repositories
                                                       get-all-repositories-paths
                                                       get-repository-id-by-path
-                                                      update-repository-info]]
+                                                      update-repository-info
+                                                      set-repository-clojure-flag
+                                                      ]]
             [git-grabber.storage.config :refer [put-unique]]
             [git-grabber.storage.counters :refer [counters counter_types
                                                   update-counter
@@ -49,3 +51,8 @@
 (defn update-repositories-counters []
   (pmap #(update-repository-counters (get-repository-info-from-github %))
         (get-repositories-names-without-counters (t/today))))
+
+(defn set-clojure-flag-for-repo [repo-path flag]
+  (when (get-repository-id-by-path repo-path)
+    (set-repository-clojure-flag repo-path flag)))
+

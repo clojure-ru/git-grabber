@@ -73,3 +73,6 @@
                                                         last-date
                                                         (inc page))))))))
 
+(defn is-leiningen-project? [repository-path]
+  (and  (core/github-file-exists? repository-path "project.clj") true))
+

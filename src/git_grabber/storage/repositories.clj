@@ -53,3 +53,9 @@
             (update repositories
                     (set-fields (prepare-repository-owner repository-map prepare-fields))
                     (where (select-keys repository-map [:full_name]))))))
+
+(defn set-repository-clojure-flag [repository-path clojure-flag]
+  (update repositories 
+          (set-fields {:is_clojure clojure-flag})
+          (where {:full_name repository-path})))
+

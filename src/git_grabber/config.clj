@@ -44,5 +44,15 @@
     :parse-fn parse-recover-interval]
    [nil "--recover-increments" "recover increments those null"
     :id :recover-increments
-    :defult true]])
+    :defult true]
+   [nil "--add-repo REPOSITORY FULLNAME" "added repositories from users"
+    :id :add-repo
+    :default "" ]
+   [nil "--test-for-clojure" "test all repositories for clojure"
+    :id :test-for-all
+    :default false]
+   [nil "--set-clojure-flag REPONAME:boolean" "manualy set repository flag is_clojure"
+    :id :manualy
+    :default false]
+   ])
 

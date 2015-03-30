@@ -96,3 +96,21 @@
        (handle-status (client/get path (make-request-params params)) path params)
        (catch Exception e (handle-error e path)))
    )))
+
+(defn strong-request [path params]
+  (let [response (client/get path params)] 
+         (case (:status response)
+           404 false
+           200 (:body response)
+           (do 
+             (Thread/sleep sleep-period)
+             (strong-request path params)))))
+
+(defn github-file-exists? [repository-path file-path]
+  (let [path (str (:repos-url settings) 
+                  repository-path 
+                  "/contents/" file-path)]
+    (with-auth
+     (try
+       (strong-request path (make-request-params {:as :json}))
+       (catch Exception e (handle-error e path))))))
