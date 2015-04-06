@@ -104,7 +104,20 @@
            200 (:body response)
            (do 
              (Thread/sleep sleep-period)
+             ;; TODO broken auth problem
              (strong-request path params)))))
+
+(defn repo-file-set 
+  ([repository-path] (repo-file-set repository-path ""))
+  ([repository-path path]
+   (let [path (str (:repos-url settings) 
+                   repository-path 
+                   "/contents/" path)]
+     (->> (with-auth
+           (try
+             (strong-request path (make-request-params {:as :json}))
+             (catch Exception e (handle-error e path))))
+         (map :name) set))))
 
 (defn github-file-exists? [repository-path file-path]
   (let [path (str (:repos-url settings) 

@@ -14,3 +14,4 @@
                  [com.taoensso/timbre "3.3.1"]]
   :main ^:skip-aot git-grabber.core
   :profiles {:uberjar {:aot :all}})
+

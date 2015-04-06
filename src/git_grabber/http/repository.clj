@@ -1,6 +1,7 @@
 (ns git-grabber.http.repository
     (:require [git-grabber.http.core :as core]
               [taoensso.timbre :as timbre]  
+              [clojure.set :refer [intersection]]
               ))
 
 (timbre/refer-timbre)
@@ -74,5 +75,6 @@
                                                         (inc page))))))))
 
 (defn is-leiningen-project? [repository-path]
-  (and  (core/github-file-exists? repository-path "project.clj") true))
+  (let [project-files #{"project.clj" "build.boot"}]
+    (not (empty? (intersection project-files (core/repo-file-set repository-path))))))
 

@@ -9,7 +9,6 @@
 
 (defn lazy-seq-of-sorted-repos
   "sort - stars, forks or updated, without sort - best matches"
-
   ([] (lazy-seq-of-sorted-repos {}))
   ([sort-request] (lazy-search-repos {:sort sort-request})))
 
@@ -43,11 +42,10 @@
      (Thread/sleep sleep-time))))
 
 (defn add-from-user [repo-path]
-  (if (not (get-repository-id-by-path))
+  (if (not (get-repository-id-by-path repo-path))
     (if (is-leiningen-project? repo-path)
       (let [repository-map (get-repository-info-from-github repo-path)] 
-        (insert-owner-name repository-map)
-        (insert-repository-path repository-map)
+        (insert-data repository-map)
         (println "repository has been added"))
       (println "repository is not clojure repo"))
     (println "this repository-record exists")))
